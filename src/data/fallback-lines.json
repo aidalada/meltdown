@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "lines": {
+    "toddler": {
+      "meltdown": [
+        "NOOO!",
+        "No no no!",
+        "Go away!",
+        "I don't WANT to!",
+        "Waaah! NO!"
+      ],
+      "upset": [
+        "I don't want to!",
+        "No! Mine!",
+        "You're mean!",
+        "I want it NOW!",
+        "Nooo, not yet!"
+      ],
+      "grumpy": [
+        "Hmph. No.",
+        "I don't like it.",
+        "Me do it.",
+        "Not done yet!",
+        "Maybe… no."
+      ],
+      "warming": [
+        "Me pick?",
+        "You help me?",
+        "One more?",
+        "Okay… maybe.",
+        "Hold my hand?"
+      ],
+      "calm": [
+        "Okay.",
+        "Okay! Me do it!",
+        "I can do it!",
+        "Together?",
+        "Okay. Then story?"
+      ]
+    },
+    "preschool": {
+      "meltdown": [
+        "NO! I don't want to!",
+        "Go away! I'm not doing it!",
+        "I HATE this!",
+        "Nooo! Leave me alone!",
+        "You can't make me!"
+      ],
+      "upset": [
+        "But I don't want to!",
+        "It's not fair!",
+        "You're being mean!",
+        "I want to keep playing!",
+        "Why do I have to?"
+      ],
+      "grumpy": [
+        "Hmph. I don't like it.",
+        "Only if I can choose.",
+        "But I'm not done yet!",
+        "You do it then.",
+        "Fine… maybe later."
+      ],
+      "warming": [
+        "Can I pick which one?",
+        "Will you help me?",
+        "Just one more minute?",
+        "Okay… can you come too?",
+        "Can we do it fast?"
+      ],
+      "calm": [
+        "Okay, I'll do it.",
+        "Okay! Let's go!",
+        "I can do it by myself!",
+        "Can we do it together?",
+        "Okay. Then a story?"
+      ]
+    },
+    "school": {
+      "meltdown": [
+        "I HATE this! Leave me alone!",
+        "No! You can't make me!",
+        "It's not FAIR!",
+        "Go away!",
+        "I'm NOT doing it!"
+      ],
+      "upset": [
+        "This is so unfair.",
+        "Why do I always have to?",
+        "You never listen to me!",
+        "I don't want to, okay?",
+        "Five more minutes!"
+      ],
+      "grumpy": [
+        "Fine. Whatever.",
+        "Can I at least finish this?",
+        "This is boring.",
+        "Only if I get to choose.",
+        "Ugh. Do I have to?"
+      ],
+      "warming": [
+        "Okay, but can I do it after?",
+        "Will you sit with me?",
+        "What if I do half now?",
+        "Can I pick which one?",
+        "Okay… how long?"
+      ],
+      "calm": [
+        "Okay, I'll do it.",
+        "Fine, let's do it together.",
+        "Okay. Thanks.",
+        "Alright, I'm coming.",
+        "Okay. Can we play after?"
+      ]
+    },
+    "preteen": {
+      "meltdown": [
+        "Leave me ALONE!",
+        "You're ruining everything!",
+        "I'm not talking to you!",
+        "Get out of my room!",
+        "This is SO unfair!"
+      ],
+      "upset": [
+        "You don't get it.",
+        "Everyone else gets to!",
+        "Why are you always on my case?",
+        "I said no.",
+        "Can you just stop?"
+      ],
+      "grumpy": [
+        "Whatever.",
+        "Fine. If I have to.",
+        "I'll do it later.",
+        "It's not a big deal.",
+        "Ugh, okay, maybe."
+      ],
+      "warming": [
+        "Okay… what if I finish this first?",
+        "Can we make a deal?",
+        "Do you actually mean that?",
+        "Okay, but just this once.",
+        "Can I explain?"
+      ],
+      "calm": [
+        "Okay. That's fair.",
+        "Okay, I'll do it now.",
+        "Thanks for listening.",
+        "Alright. Deal.",
+        "Okay. Sorry I yelled."
+      ]
+    }
+  }
+}

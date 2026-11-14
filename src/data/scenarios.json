@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "childNames": [
+    "Max",
+    "Lily",
+    "Leo",
+    "Mia",
+    "Sam",
+    "Ava",
+    "Noah",
+    "Zoe"
+  ],
+  "scenarios": [
+    {
+      "id": "teeth-bedtime",
+      "source": "preset",
+      "priority": "P0",
+      "title": "Brushing teeth at bedtime",
+      "childName": "Max",
+      "ageYears": 4,
+      "temperament": "strong-willed",
+      "trigger": "refuses to brush teeth",
+      "setting": "Bathroom, 7:45 pm, already late for bed",
+      "underlyingNeed": "autonomy",
+      "openingLine": "NO! I don't want to brush my teeth!",
+      "planPhrases": [
+        {
+          "phrase": "You really don't want bedtime to start, huh?",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "Top teeth first or bottom teeth first?",
+          "technique": "offer_choice"
+        },
+        {
+          "phrase": "When teeth are sparkly, then we read your story.",
+          "technique": "when_then"
+        }
+      ]
+    },
+    {
+      "id": "leaving-playground",
+      "source": "preset",
+      "priority": "P0",
+      "title": "Leaving the playground",
+      "childName": "Lily",
+      "ageYears": 3,
+      "temperament": "sensitive",
+      "trigger": "doesn't want to leave the playground",
+      "setting": "Park, 5:30 pm, time to go home for dinner",
+      "underlyingNeed": "transition",
+      "openingLine": "No! I'm not going! I want to SLIDE!",
+      "planPhrases": [
+        {
+          "phrase": "You love the slide so much. It's hard to stop.",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "One more slide or two more swings, then we go?",
+          "technique": "offer_choice"
+        },
+        {
+          "phrase": "Want to hop to the car like a bunny?",
+          "technique": "playful"
+        }
+      ]
+    },
+    {
+      "id": "getting-dressed",
+      "source": "preset",
+      "priority": "P0",
+      "title": "Getting dressed for daycare",
+      "childName": "Leo",
+      "ageYears": 5,
+      "temperament": "strong-willed",
+      "trigger": "refuses to put on clothes",
+      "setting": "Bedroom, 7:50 am, you need to leave in 10 minutes",
+      "underlyingNeed": "autonomy",
+      "openingLine": "I'm NOT wearing that! It's itchy!",
+      "planPhrases": [
+        {
+          "phrase": "That shirt feels itchy and you hate that feeling.",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "The red shirt or the soft blue one?",
+          "technique": "offer_choice"
+        },
+        {
+          "phrase": "Let's race: can you get dressed before I count to ten?",
+          "technique": "playful"
+        }
+      ]
+    },
+    {
+      "id": "screen-time-off",
+      "source": "preset",
+      "priority": "P1",
+      "title": "Turning off the tablet",
+      "childName": "Mia",
+      "ageYears": 7,
+      "temperament": "strong-willed",
+      "trigger": "won't stop playing on the tablet",
+      "setting": "Living room, 6 pm, dinner is ready",
+      "underlyingNeed": "transition",
+      "openingLine": "Just one more level! You promised!",
+      "planPhrases": [
+        {
+          "phrase": "It's so hard to stop right in the middle of a level.",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "Do you want to save it now or after this round?",
+          "technique": "offer_choice"
+        },
+        {
+          "phrase": "When dinner is done, then you can tell me about the level.",
+          "technique": "when_then"
+        }
+      ]
+    },
+    {
+      "id": "sibling-fight",
+      "source": "preset",
+      "priority": "P1",
+      "title": "Fighting over a toy",
+      "childName": "Sam",
+      "ageYears": 6,
+      "temperament": "sensitive",
+      "trigger": "screaming because a sibling took a toy",
+      "setting": "Playroom, Saturday morning",
+      "underlyingNeed": "fairness",
+      "openingLine": "She TOOK it! It's MINE! It's not fair!",
+      "planPhrases": [
+        {
+          "phrase": "You're so upset. That toy really matters to you.",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "I won't let anyone grab. I'll hold it while we figure it out.",
+          "technique": "calm_limit"
+        },
+        {
+          "phrase": "Do you want to set a timer or trade toys?",
+          "technique": "offer_choice"
+        }
+      ]
+    },
+    {
+      "id": "homework-meltdown",
+      "source": "preset",
+      "priority": "P1",
+      "title": "Homework meltdown",
+      "childName": "Ava",
+      "ageYears": 9,
+      "temperament": "sensitive",
+      "trigger": "refuses to do math homework",
+      "setting": "Kitchen table, 7 pm, worksheet due tomorrow",
+      "underlyingNeed": "competence",
+      "openingLine": "I can't do this! It's too hard! I'm not doing it!",
+      "planPhrases": [
+        {
+          "phrase": "Math feels really frustrating right now.",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "I'm right here. Let's do just the first problem together.",
+          "technique": "connect_first"
+        },
+        {
+          "phrase": "Want to start with the easiest one or the shortest one?",
+          "technique": "offer_choice"
+        }
+      ]
+    }
+  ]
+}

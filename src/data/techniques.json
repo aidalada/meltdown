@@ -1,0 +1,249 @@
+{
+  "version": 1,
+  "techniques": [
+    {
+      "tag": "name_feeling",
+      "polarity": "positive",
+      "weight": 12,
+      "label": "Named the feeling",
+      "shortTip": "Name what your child feels before you guide.",
+      "why": "When a child hears their feeling named, they feel understood, settle faster, and become able to listen.",
+      "goodExample": "You're really mad that playtime is over.",
+      "betterWith": [],
+      "source": {
+        "name": "Gottman Institute — Emotion Coaching",
+        "url": "https://www.gottman.com"
+      },
+      "patterns": [
+        "\\b(you|you're|youre|you are|you seem|you look|you feel|sounds like you|looks like you|i can see you)\\b[^.!?]{0,30}\\b(mad|angry|upset|sad|frustrated|disappointed|scared|worried|tired|annoyed|grumpy|jealous|nervous|overwhelmed|hurt)\\b",
+        "\\b(that|this) (is|was|feels) (so |really )?(hard|frustrating|annoying|disappointing|unfair|scary)\\b",
+        "\\byou (really|so) (want|wanted|wish)\\b"
+      ]
+    },
+    {
+      "tag": "connect_first",
+      "polarity": "positive",
+      "weight": 8,
+      "label": "Connected first",
+      "shortTip": "Offer closeness before correction.",
+      "why": "Calm closeness tells a child's alarm system they are safe, which makes cooperation possible.",
+      "goodExample": "I'm right here. Come sit with me for a second.",
+      "betterWith": [],
+      "source": {
+        "name": "American Academy of Pediatrics — HealthyChildren.org",
+        "url": "https://www.healthychildren.org"
+      },
+      "patterns": [
+        "\\b(i'm|i am) (right )?(here|with you|not going anywhere)\\b",
+        "\\b(come here|come sit|let's (hug|cuddle|take a breath|breathe)|can i (hug|hold) you|i love you|you're safe|we'll figure it out|i've got you)\\b"
+      ]
+    },
+    {
+      "tag": "offer_choice",
+      "polarity": "positive",
+      "weight": 8,
+      "label": "Offered a choice",
+      "shortTip": "Give two choices you're happy with.",
+      "why": "A limited choice gives a child some control, so they don't have to fight for it.",
+      "goodExample": "Do you want the blue toothbrush or the green one?",
+      "betterWith": [],
+      "source": {
+        "name": "CDC — Essentials for Parenting Toddlers and Preschoolers",
+        "url": "https://www.cdc.gov"
+      },
+      "patterns": [
+        "\\b(do you want|would you like|you can choose|you can pick|which one|which do you|you get to choose|you get to pick|want to)\\b[^?]{0,60}\\bor\\b",
+        "\\b\\w+ or (?!else\\b)\\w+( one)?\\s*\\?"
+      ]
+    },
+    {
+      "tag": "playful",
+      "polarity": "positive",
+      "weight": 8,
+      "label": "Made it playful",
+      "shortTip": "Turn the task into a game.",
+      "why": "Play lowers stress and invites cooperation without a power struggle.",
+      "goodExample": "Can your toothbrush find all the sugar bugs hiding in there?",
+      "betterWith": [],
+      "source": {
+        "name": "PCIT International — PRIDE skills (Parent-Child Interaction Therapy)",
+        "url": "https://www.pcit.org"
+      },
+      "patterns": [
+        "\\b(let's pretend|pretend|i bet you can't|race you|let's race|can you (roar|hop|jump|stomp|be a)|silly|monster|sugar bugs|magic|tickle)\\b",
+        "\\blike a (lion|rocket|robot|dinosaur|bunny|frog|superhero|race car)\\b"
+      ]
+    },
+    {
+      "tag": "when_then",
+      "polarity": "positive",
+      "weight": 6,
+      "label": "Used when–then",
+      "shortTip": "Link the task to what comes next.",
+      "why": "A when–then sentence makes the routine predictable instead of a battle of wills.",
+      "goodExample": "When your teeth are clean, then we'll read your story.",
+      "betterWith": [],
+      "source": {
+        "name": "CDC — Essentials for Parenting Toddlers and Preschoolers",
+        "url": "https://www.cdc.gov"
+      },
+      "patterns": [
+        "\\b(when|as soon as|once)\\b[^.!?]{1,60}\\b(then|we can|we'll|you can|you get to)\\b",
+        "\\bfirst\\b[^.!?]{1,60}\\bthen\\b"
+      ]
+    },
+    {
+      "tag": "calm_limit",
+      "polarity": "positive",
+      "weight": 5,
+      "label": "Set a calm limit",
+      "shortTip": "Hold the limit calmly, without threats.",
+      "why": "A calm, clear limit shows the child you're in charge and on their side at the same time.",
+      "goodExample": "I won't let you throw the toothbrush. I'll keep it safe until you're ready.",
+      "betterWith": [],
+      "source": {
+        "name": "AAP Policy Statement: Effective Discipline to Raise Healthy Children (Pediatrics, 2018)",
+        "url": "https://doi.org/10.1542/peds.2018-3112"
+      },
+      "patterns": [
+        "\\b(i won't let you|i'm not going to let you|i will not let you|it's not okay to|it is not okay to|i can't let you|the rule is|we don't (hit|throw|kick|bite))\\b",
+        "\\b(it's|it is) (time|bedtime) (to|for)\\b"
+      ]
+    },
+    {
+      "tag": "labeled_praise",
+      "polarity": "positive",
+      "weight": 6,
+      "label": "Praised the effort",
+      "shortTip": "Praise exactly what they did right.",
+      "why": "Specific praise tells the child which behavior to repeat and builds connection.",
+      "goodExample": "Thank you for opening your mouth so wide!",
+      "betterWith": [],
+      "source": {
+        "name": "PCIT International — PRIDE skills (Parent-Child Interaction Therapy)",
+        "url": "https://www.pcit.org"
+      },
+      "patterns": [
+        "\\b(thank you for|thanks for|great job|good job|nice job|way to go|i love (how|that) you|i'm proud of (you|how)|you did it)\\b"
+      ]
+    },
+    {
+      "tag": "threat",
+      "polarity": "negative",
+      "weight": -15,
+      "label": "Threat",
+      "shortTip": "Swap the threat for a choice or a when–then.",
+      "why": "Threats set off a child's alarm system: they dig in harder or comply out of fear, and trust takes a hit.",
+      "goodExample": null,
+      "betterWith": [
+        "offer_choice",
+        "when_then"
+      ],
+      "source": {
+        "name": "AAP Policy Statement: Effective Discipline to Raise Healthy Children (Pediatrics, 2018)",
+        "url": "https://doi.org/10.1542/peds.2018-3112"
+      },
+      "patterns": [
+        "\\b(or else|if you don't|if you do not|you're going to lose|you will lose|i'll take (it|your|away)|i will take|you won't get|you're not getting|you are not getting|straight to bed|time-?out|go to your room|i'm (going to|gonna) (take|leave|call))\\b",
+        "\\bno (ipad|tablet|tv|screens?|story|stories|dessert|toys?|games?|park|playdate|treats?)\\b"
+      ]
+    },
+    {
+      "tag": "yell_or_insult",
+      "polarity": "negative",
+      "weight": -20,
+      "label": "Yelling or name-calling",
+      "shortTip": "Lower your voice; describe the behavior, not the child.",
+      "why": "Harsh words and yelling raise fear and shame, which makes meltdowns longer and more frequent.",
+      "goodExample": null,
+      "betterWith": [
+        "connect_first",
+        "calm_limit"
+      ],
+      "source": {
+        "name": "AAP Policy Statement: Effective Discipline to Raise Healthy Children (Pediatrics, 2018)",
+        "url": "https://doi.org/10.1542/peds.2018-3112"
+      },
+      "patterns": [
+        "\\b(stop being (a|such a) (baby|brat)|you're (being )?(a |such a )?(baby|brat|bad|naughty|annoying|ridiculous|impossible|spoiled)|shut up|stupid|what is wrong with you|you're driving me crazy)\\b"
+      ]
+    },
+    {
+      "tag": "lecture",
+      "polarity": "negative",
+      "weight": -8,
+      "label": "Lecture",
+      "shortTip": "Keep it to one short sentence while they're upset.",
+      "why": "An upset child can't take in long explanations; save the lesson for a calm moment.",
+      "goodExample": null,
+      "betterWith": [
+        "name_feeling",
+        "when_then"
+      ],
+      "source": {
+        "name": "American Academy of Pediatrics — HealthyChildren.org",
+        "url": "https://www.healthychildren.org"
+      },
+      "patterns": [
+        "\\b(how many times|you need to understand|when i was your age|do you know how (much|hard)|you always|you never|we've talked about this|i've told you)\\b"
+      ]
+    },
+    {
+      "tag": "dismiss_feeling",
+      "polarity": "negative",
+      "weight": -10,
+      "label": "Dismissed the feeling",
+      "shortTip": "Accept the feeling, then guide the behavior.",
+      "why": "When a feeling is brushed off, the child usually has to show it louder to be heard.",
+      "goodExample": null,
+      "betterWith": [
+        "name_feeling"
+      ],
+      "source": {
+        "name": "Gottman Institute — Emotion Coaching",
+        "url": "https://www.gottman.com"
+      },
+      "patterns": [
+        "\\b(stop crying|stop whining|it's not a big deal|it's no big deal|you're fine|you are fine|calm down|don't be (sad|mad|upset|silly|a baby)|there's nothing to (cry|be upset) about|get over it|that's enough crying|big kids don't cry)\\b"
+      ]
+    },
+    {
+      "tag": "why_question",
+      "polarity": "negative",
+      "weight": -5,
+      "label": "Asked 'why'",
+      "shortTip": "Guess the feeling instead of asking why.",
+      "why": "Upset young kids can't explain why; the question feels like blame and adds pressure.",
+      "goodExample": null,
+      "betterWith": [
+        "name_feeling"
+      ],
+      "source": {
+        "name": "Gottman Institute — Emotion Coaching",
+        "url": "https://www.gottman.com"
+      },
+      "patterns": [
+        "\\bwhy (are|do|would|did|can't|won't|is it|must) you\\b"
+      ]
+    },
+    {
+      "tag": "bribe",
+      "polarity": "negative",
+      "weight": -3,
+      "label": "Bribe",
+      "shortTip": "Use when–then for routines instead of rewards for stopping.",
+      "why": "Rewarding a child for stopping a meltdown can teach that meltdowns pay off.",
+      "goodExample": null,
+      "betterWith": [
+        "when_then"
+      ],
+      "source": {
+        "name": "American Academy of Pediatrics — HealthyChildren.org",
+        "url": "https://www.healthychildren.org"
+      },
+      "patterns": [
+        "\\b(i'll give you|i'll buy you|i'll get you|you can have (a |some )?(candy|treat|cookie|ice cream|sweets|chocolate|lollipop|toy)|if you stop (crying|screaming|whining)[^.!?]{0,40}(candy|treat|cookie|ice cream|toy|chocolate|screen|ipad|tablet))\\b"
+      ]
+    }
+  ]
+}
