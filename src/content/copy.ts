@@ -84,8 +84,8 @@ export const copy = {
     newMoment: "New moment",
     source: "Source",
     statTurns: "Turns",
-    statStart: "Start",
-    statEnd: "End",
+    statStart: "Starting calm",
+    statEnd: "Ending calm",
     outcomes: { calm_reached: "Calmed down", turn_limit: "Turn limit reached", ended_by_parent: "Ended early" },
   },
   pricing: {
