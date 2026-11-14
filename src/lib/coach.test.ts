@@ -96,6 +96,14 @@ describe("coachReply", () => {
     expect(m.technique).not.toBe("name_feeling");
   });
 
+  it("does not praise the parent for describing their own frustration", () => {
+    for (const story of ["It's so hard every night, bedtime takes two hours and nobody sleeps.", "I feel so frustrated, he will not put his shoes on in the morning."]) {
+      const m = coach(coachReply(story, EMPTY, NOW).message);
+      expect(m.lines).not.toContain(copy.coach.praised(copy.coach.posDone.name_feeling));
+      expect(m.technique).toBeDefined();
+    }
+  });
+
   it("remembers a habit that keeps coming up", () => {
     const m = coach(coachReply(THREAT_STORY, { ...EMPTY, struggle: "threat" }, NOW).message);
     expect(m.again).toBe(true);

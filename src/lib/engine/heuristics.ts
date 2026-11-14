@@ -82,11 +82,14 @@ export function heuristicDebriefOutput(req: DebriefRequest): DebriefModelOutput 
     summary = req.scenario.childName + " calmed down in " + count + " turns. " + TECHNIQUE_BY_TAG[best].label + " made the biggest difference.";
   } else {
     const next = suggestedTags.find((tag) => !totals.has(tag)) ?? "name_feeling";
-    summary = "You stayed with it for " + count + " turns. Next time, try leading with " + TECHNIQUE_BY_TAG[next].label + ".";
+    summary = "You stayed with it for " + count + " turns. Next time, try this: " + TECHNIQUE_BY_TAG[next].shortTip;
   }
+  // A phrase from this scenario's plan fits the moment better than the generic example (about toothbrushes).
+  const plan = req.scenario.planPhrases ?? [];
   const rewrites = turnsToRewrite(req.turns).map((turn) => {
     const negative = turn.tags.map(({ tag }) => TECHNIQUE_BY_TAG[tag]).find((item) => item.polarity === "negative");
-    const { phrase, technique } = examplePhrase(negative?.betterWith[0] ?? "name_feeling");
+    const better: PositiveTag[] = negative?.betterWith.length ? negative.betterWith : ["name_feeling"];
+    const { phrase, technique } = plan.find((p) => better.includes(p.technique)) ?? examplePhrase(better[0]);
     return { turn_index: turn.index, improved: phrase, technique };
   });
   return { summary, rewrites, tonight_plan: fallbackPlan(req.scenario) };

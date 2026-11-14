@@ -36,12 +36,16 @@ it("takes originals from eligible turns and computes all stats locally", () => {
   expect(result.stats).toEqual({ turns: 5, startMood: 50, endMood: 25, lowMood: 25, peakMood: 62, outcome: "ended_by_parent" });
 });
 
-it("uses the first negative technique suggestion or name_feeling", () => {
+it("rewrites with the scenario's own plan phrase when one fits, else the technique's example", () => {
   const out = DebriefModelOutputSchema.parse(heuristicDebriefOutput(req));
-  expect(out.rewrites.map((r) => [r.technique, r.improved])).toEqual(
-    (["connect_first", "offer_choice", "name_feeling"] as const).map((tag) => [tag, TECHNIQUE_BY_TAG[tag].goodExample]),
-  );
-  expect(out.summary).toBe("You stayed with it for 5 turns. Next time, try leading with Offered a choice.");
+  const plan = req.scenario.planPhrases ?? [];
+  const fromPlan = (tag: string) => plan.find((p) => p.technique === tag)?.phrase;
+  expect(out.rewrites.map((r) => [r.technique, r.improved])).toEqual([
+    ["connect_first", TECHNIQUE_BY_TAG.connect_first.goodExample],
+    ["offer_choice", fromPlan("offer_choice")],
+    ["name_feeling", fromPlan("name_feeling")],
+  ]);
+  expect(out.summary).toBe("You stayed with it for 5 turns. Next time, try this: " + TECHNIQUE_BY_TAG.offer_choice.shortTip);
 });
 
 it("uses total applied points for calm and the default label after all four suggestions", () => {
@@ -50,7 +54,7 @@ it("uses total applied points for calm and the default label after all four sugg
   expect(heuristicDebriefOutput({ ...req, turns, outcome: "calm_reached" }).summary)
     .toBe(req.scenario.childName + " calmed down in 3 turns. Offered a choice made the biggest difference.");
   expect(heuristicDebriefOutput({ ...req, turns }).summary)
-    .toBe("You stayed with it for 3 turns. Next time, try leading with Named the feeling.");
+    .toBe("You stayed with it for 3 turns. Next time, try this: " + TECHNIQUE_BY_TAG.name_feeling.shortTip);
 });
 
 it("completes missing or repetitive plans with three different techniques", () => {

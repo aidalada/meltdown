@@ -179,7 +179,12 @@ export function coachReply(text: string, memory: CoachMemory, now: Date, t: Text
   const spoken = hits.find((h) => isNegative(h.tag));
   const described = spoken ? undefined : DESCRIBED.find((d) => d.en.test(said) || d.ru.test(said));
   const negative = spoken && isNegative(spoken.tag) ? spoken.tag : described?.tag;
-  const used = hits.map((h) => h.tag).filter((tag): tag is PositiveTag => !isNegative(tag));
+  // Parents narrate here. "It's so hard" or "that was frustrating" is about the parent, not the child's
+  // feeling named out loud, so name_feeling counts only when the words are addressed to the child.
+  const used = hits
+    .filter((h) => h.tag !== "name_feeling" || /\byou(r|'re)?\b/i.test(h.evidence))
+    .map((h) => h.tag)
+    .filter((tag): tag is PositiveTag => !isNegative(tag));
   const topic = TOPICS.find((x) => x.en.test(said) || x.ru.test(said));
   const technique = suggest(negative, used, topic?.technique ?? "name_feeling");
   const fitting = PRESETS.find((p) => p.id === topic?.preset)?.planPhrases?.find((p) => p.technique === technique)?.phrase;
