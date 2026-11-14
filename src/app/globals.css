@@ -3,9 +3,9 @@
 /* SPEC 13.1 tokens. The *-soft and *-text tokens are tints for chips and badges. */
 @theme static {
   --color-ink: #1B2140;
-  --color-muted: #5B6478;
-  --color-line: #E3E7EF;
-  --color-bg: #F6F7FB;
+  --color-muted: #655C55;
+  --color-line: #EBE3D8;
+  --color-bg: #FBF7F1;
   --color-surface: #FFFFFF;
   --color-primary: #2F5BEA;
   --color-primary-ink: #FFFFFF;
@@ -77,7 +77,7 @@ body {
   .btn-primary { background: var(--color-primary); color: var(--color-primary-ink); }
   .btn-primary:hover { background: #2450D6; }
   .btn-secondary { background: var(--color-surface); color: var(--color-ink); border-color: var(--color-line); }
-  .btn-secondary:hover { border-color: #C9D0DD; }
+  .btn-secondary:hover { border-color: #D9CDBE; }
   .btn-ghost { background: transparent; color: var(--color-ink); border-color: var(--color-line); }
   .btn-lg { min-height: 52px; padding: 0 24px; font-size: 16px; border-radius: 14px; }
   .pill {
@@ -177,7 +177,7 @@ body {
   .typing i:nth-child(3) { animation-delay: .3s; }
 
   /* turn input */
-  .turn-input-wrap { position: sticky; bottom: 0; z-index: 4; padding-top: 8px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); background: linear-gradient(to bottom, rgba(246,247,251,0), var(--color-bg) 24%); }
+  .turn-input-wrap { position: sticky; bottom: 0; z-index: 4; padding-top: 8px; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); background: linear-gradient(to bottom, rgba(251,247,241,0), var(--color-bg) 24%); }
   .turn-input { display: flex; gap: 8px; align-items: flex-end; background: var(--color-surface); border: 1px solid var(--color-line); border-radius: 18px; padding: 8px; box-shadow: 0 6px 24px rgba(27,33,64,.10); }
   .turn-input:focus-within { border-color: var(--color-primary); }
   .turn-input textarea { flex: 1; min-width: 0; border: 0; resize: none; background: transparent; padding: 10px 8px; min-height: 44px; max-height: 140px; line-height: 1.45; font: inherit; color: inherit; }
@@ -186,7 +186,7 @@ body {
   .icon-btn[disabled] { opacity: .5; cursor: not-allowed; }
   .icon-btn-listening { background: var(--color-bad-soft); border-color: #F3B7BA; color: var(--color-bad-text); }
 
-  .overlay { position: absolute; inset: -8px; z-index: 6; display: grid; place-items: center; background: rgba(246,247,251,.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); border-radius: var(--radius-card); }
+  .overlay { position: absolute; inset: -8px; z-index: 6; display: grid; place-items: center; background: rgba(251,247,241,.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); border-radius: var(--radius-card); }
 
   /* avatar */
   .avatar svg { display: block; overflow: visible; }
@@ -214,7 +214,7 @@ body {
   .plan-phrase { font-family: var(--font-display); font-weight: 800; font-size: 19px; line-height: 1.3; }
   .plan .btn-secondary { background: #FFFFFF; color: var(--color-ink); border-color: #FFFFFF; }
   .plan .btn-ghost { color: #FFFFFF; border-color: rgba(255,255,255,.35); }
-  .skeleton { height: 18px; border-radius: 8px; background: linear-gradient(90deg, var(--color-line), #EEF1F6, var(--color-line)); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
+  .skeleton { height: 18px; border-radius: 8px; background: linear-gradient(90deg, var(--color-line), #F3EDE4, var(--color-line)); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
 
   /* pricing */
   .price-amount { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -274,8 +274,6 @@ body {
   .coach-row-avatar { width: 32px; flex: none; }
   .bubble-coach { background: var(--color-surface); border: 1px solid var(--color-line); border-bottom-left-radius: 6px; display: grid; gap: 10px; }
   .bubble-coach p { margin: 0; }
-  .technique-note { display: grid; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--color-accent-soft); border: 1px solid #FFD3B5; font-size: 14px; color: #7A3A0E; }
-  .technique-note a { color: #7A3A0E; text-underline-offset: 2px; }
   .chip-btn {
     min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--color-line); background: var(--color-surface);
     font: inherit; font-size: 15px; font-weight: 600; color: var(--color-ink); cursor: pointer;
@@ -361,4 +359,53 @@ body {
   .bubble-coach .btn { white-space: normal; height: auto; padding-top: 8px; padding-bottom: 8px; text-align: left; line-height: 1.25; }
   .seg button { white-space: normal; line-height: 1.2; }
   .hero-chain { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Simplify pass: short answers first, details on demand, symbols to scan by */
+@layer components {
+  /* "Try saying" card inside Sebastian's reply */
+  .say-card { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--color-accent-soft); border: 1px solid #FFD3B5; }
+  .say-label { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: #9A4A12; }
+  .say-phrase { font-family: var(--font-display); font-weight: 800; font-size: 18px; line-height: 1.3; color: var(--color-ink); }
+  .say-technique { font-size: 13px; color: var(--color-muted); }
+  .memory-chip {
+    display: inline-flex; align-items: center; gap: 6px; justify-self: start; padding: 4px 10px; border-radius: 999px;
+    background: var(--color-primary-soft); color: var(--color-primary); font-size: 13px; font-weight: 600;
+  }
+
+  /* Disclosure: the why and the source, one tap away */
+  .disclosure-btn {
+    display: inline-flex; align-items: center; gap: 6px; justify-self: start; min-height: 44px; padding: 0 12px;
+    border-radius: 12px; border: 1px solid var(--color-line); background: var(--color-surface);
+    font: inherit; font-size: 14px; font-weight: 600; color: var(--color-ink); cursor: pointer;
+    transition: border-color .15s;
+  }
+  .disclosure-btn:hover { border-color: var(--color-primary); }
+  .disclosure-chevron { transition: transform .25s cubic-bezier(0.16, 1, 0.3, 1); }
+  .disclosure-btn[aria-expanded="true"] .disclosure-chevron { transform: rotate(180deg); }
+  .disclosure-panel { display: grid; gap: 6px; padding-top: 8px; animation: rise .25s cubic-bezier(0.16, 1, 0.3, 1); }
+  .chip-btn[aria-pressed="true"] { background: var(--color-primary-soft); border-color: #CBD6FA; color: var(--color-primary); }
+
+  /* Symbols */
+  .icon-tile { display: grid; place-items: center; flex: none; width: 52px; height: 52px; border-radius: 14px; background: var(--color-accent-soft); color: #9A4A12; }
+  .icon-tile-sm { width: 36px; height: 36px; border-radius: 10px; }
+  .starter { display: flex; align-items: center; gap: 12px; }
+
+  /* Landing hero art */
+  .hero-art { position: relative; min-width: 0; }
+  /* Sits under the picture and only overlaps the floor, never the people. */
+  .hero-say {
+    display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin: -22px auto 0; max-width: 420px; position: relative;
+    box-shadow: 0 10px 30px rgba(27, 33, 64, .08);
+  }
+
+  /* "A day with Meltdown": bigger dots that carry the step's symbol */
+  .day-step { padding: 0 0 28px 52px; }
+  .day-step::before { left: 17px; top: 40px; }
+  .day-dot { display: grid; place-items: center; width: 36px; height: 36px; top: -6px; color: #FFFFFF; }
+  @media (min-width: 768px) {
+    .day-step { padding: 50px 0 0; }
+    .day-step::before { left: 46px; top: 17px; }
+    .day-dot { top: 0; }
+  }
 }

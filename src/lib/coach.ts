@@ -174,23 +174,21 @@ export function coachReply(text: string, memory: CoachMemory, now: Date, t: Text
   const used = hits.map((h) => h.tag).filter((tag): tag is PositiveTag => !isNegative(tag));
   const topic = TOPICS.find((x) => x.en.test(said) || x.ru.test(said));
   const technique = suggest(negative, used, topic?.technique ?? "name_feeling");
-  const tip = t.technique(technique);
   const fitting = PRESETS.find((p) => p.id === topic?.preset)?.planPhrases?.find((p) => p.technique === technique)?.phrase;
+  const say = fitting ?? (topic ? undefined : TECHNIQUE_BY_TAG[technique].goodExample ?? undefined);
 
-  const lines: string[] = [c.empathy[said.length % c.empathy.length]];
-  if (negative) {
-    lines.push(spoken ? c.noticed(spoken.evidence, c.negNote[negative]) : c.noticedPlain[negative]);
-    if (memory.struggle === negative) lines.push(c.again);
-  } else if (used.length > 0) {
-    lines.push(c.praised(c.posDone[used[0]]));
-  }
-  lines.push(`${c.tryThis(tip.shortTip)} ${tip.why}`);
-  const example = fitting ?? (topic ? null : TECHNIQUE_BY_TAG[technique].goodExample);
-  if (example) lines.push(c.example(example));
-  lines.push(c.offer(memory.child?.name ?? c.childFallback));
+  // One short line up front. The tip, the why and the source sit behind "Why it works" on screen.
+  const lead = negative
+    ? (spoken ? c.noticed(spoken.evidence, c.negNote[negative]) : c.noticedPlain[negative])
+    : used.length > 0 ? c.praised(c.posDone[used[0]]) : c.empathy[said.length % c.empathy.length];
   return {
     kind: "message",
-    message: { role: "coach", at, lines, technique, rehearse: said.slice(0, MAX_SCENARIO_TEXT), ...(topic ? { preset: topic.preset } : {}) },
+    message: {
+      role: "coach", at, lines: [lead], technique, rehearse: said.slice(0, MAX_SCENARIO_TEXT),
+      ...(say ? { say } : {}),
+      ...(negative && memory.struggle === negative ? { again: true } : {}),
+      ...(topic ? { preset: topic.preset } : {}),
+    },
   };
 }
 

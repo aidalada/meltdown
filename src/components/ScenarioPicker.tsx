@@ -3,7 +3,7 @@
 import { useTexts } from "@/content/i18n";
 import { PRESETS, PRESET_PRIORITY } from "@/lib/data";
 import type { Scenario } from "@/lib/types";
-import { ChildAvatar } from "./ChildAvatar";
+import { Icon, scenarioIcon } from "./Icon";
 
 const P0 = PRESETS.filter((p) => PRESET_PRIORITY[p.id] === "P0");
 
@@ -17,7 +17,7 @@ export function ScenarioPicker({ onPick, resolve }: { onPick(s: Scenario): void;
         return (
           <button key={preset.id} type="button" className="card preset" onClick={() => onPick(s)}>
             <div className="flex items-center gap-3">
-              <ChildAvatar band="upset" speaking={false} thinking={false} name={s.childName} size={56} showName={false} />
+              <span className="icon-tile" aria-hidden="true"><Icon name={scenarioIcon(preset.id)} size={28} /></span>
               <div>
                 <h3 className="text-lg">{scenario(preset).title}</h3>
                 <p className="text-[13px] font-semibold text-muted">

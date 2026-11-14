@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { Disclosure } from "@/components/Disclosure";
+import { Icon } from "@/components/Icon";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useCopy, useLocale, useTexts } from "@/content/i18n";
 import { TECHNIQUE_BY_TAG } from "@/lib/data";
@@ -52,11 +54,21 @@ export function CoachThread({ messages, typing, today, pendingCheckin, rehearsin
               <li className="msg msg-parent"><div className="bubble bubble-parent">{m.text}</div></li>
             ) : (
               <CoachBubble avatar={lastOfGroup} lines={m.lines}>
-                {m.technique && <TechniqueSource tag={m.technique} />}
-                {m.rehearse && (
-                  <button type="button" className="btn btn-primary justify-self-start" disabled={rehearsing} onClick={() => m.rehearse && onRehearse(m.rehearse, m.preset)}>
-                    {rehearsing ? copy.coach.rehearsing : copy.coach.rehearse}
-                  </button>
+                {m.again && <span className="memory-chip"><Icon name="repeat" size={14} />{copy.coach.againShort}</span>}
+                {m.technique && <SayCard tag={m.technique} say={m.say} />}
+                {(m.rehearse || m.technique) && (
+                  <Disclosure>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {m.rehearse && (
+                        <button type="button" className="btn btn-primary" disabled={rehearsing} onClick={() => m.rehearse && onRehearse(m.rehearse, m.preset)}>
+                          <Icon name="play" size={18} />
+                          {rehearsing ? copy.coach.rehearsing : copy.coach.rehearse}
+                        </button>
+                      )}
+                      {m.technique && <Disclosure.Button>{copy.coach.why}</Disclosure.Button>}
+                    </div>
+                    {m.technique && <Disclosure.Panel><WhyItWorks tag={m.technique} /></Disclosure.Panel>}
+                  </Disclosure>
                 )}
                 {m.checkin && m.checkin === pendingCheckin && (
                   <div className="flex flex-wrap gap-2">
@@ -102,14 +114,29 @@ function CoachBubble({ avatar, lines, children }: { avatar: boolean; lines: stri
   );
 }
 
-/** The suggested technique with its source, straight from techniques.json. */
-function TechniqueSource({ tag }: { tag: PositiveTag }) {
-  const { copy, technique: text } = useTexts();
-  const technique = TECHNIQUE_BY_TAG[tag];
+/** What to say instead, in a card that stands out from the chat text. Falls back to the short tip. */
+function SayCard({ tag, say }: { tag: PositiveTag; say?: string }) {
+  const { copy, technique } = useTexts();
+  const text = technique(tag);
   return (
-    <div className="technique-note">
-      <span className="font-semibold">{copy.coach.trySource(text(tag).label)}</span>
-      <a href={technique.source.url} target="_blank" rel="noopener noreferrer">{copy.coach.source}: {technique.source.name}</a>
+    <div className="say-card">
+      <p className="say-label"><Icon name="say" size={16} />{say ? copy.coach.sayLabel : copy.coach.tipLabel}</p>
+      <p className="say-phrase">{say ? `“${say}”` : text.shortTip}</p>
+      <p className="say-technique">{text.label}</p>
+    </div>
+  );
+}
+
+/** The tip, the reason and the source, straight from techniques.json (CLAUDE.md rule 6). */
+function WhyItWorks({ tag }: { tag: PositiveTag }) {
+  const { copy, technique } = useTexts();
+  const text = technique(tag);
+  const { source } = TECHNIQUE_BY_TAG[tag];
+  return (
+    <div className="grid gap-1.5 text-[15px]">
+      <p className="font-semibold">{copy.coach.tryThis(text.shortTip)}</p>
+      <p className="text-muted">{text.why}</p>
+      <a className="text-[13px]" href={source.url} target="_blank" rel="noopener noreferrer">{copy.coach.source}: {source.name}</a>
     </div>
   );
 }
