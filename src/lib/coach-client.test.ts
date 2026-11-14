@@ -34,6 +34,14 @@ describe("askCoach", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("treats Vercel's 200 HTML not-found page as a missing route, and asks only once", async () => {
+    const fetchMock = vi.fn(async () => new Response("<!DOCTYPE html><html></html>", { status: 200, headers: { "Content-Type": "text/html; charset=utf-8" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await askCoach(REQUEST)).toBeNull();
+    expect(await askCoach(REQUEST)).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("falls back on a server error but tries again next time", async () => {
     const fetchMock = respond(500, { ok: false, error: { code: "INTERNAL", message: "boom" } });
     vi.stubGlobal("fetch", fetchMock);
