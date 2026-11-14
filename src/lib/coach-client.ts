@@ -1,16 +1,15 @@
-import { z } from "zod";
 import type { Locale } from "@/content/locale";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
-import { ApiResponseSchema, PositiveTagSchema, SafetySchema } from "./schemas";
+import { ApiResponseSchema, CoachReplySchema } from "./schemas";
 import type { NegativeTag, PositiveTag, Safety, Temperament } from "./types";
 
 /*
  * Client for POST /api/coach, Sebastian's live AI reply.
  *
- * The route does not exist yet (team B). Until it does, askCoach() returns null and the caller
- * answers with the local coach (src/lib/coach.ts). The day the route is deployed, Sebastian
- * switches to the model with no frontend change. The same local coach stays as the fallback for
- * offline mode, timeouts and errors (CLAUDE.md rule 7).
+ * The route lives in src/app/api/coach (server side: src/lib/ai/coach.server.ts). askCoach() returns
+ * null whenever the caller should answer with the local coach (src/lib/coach.ts): offline mode,
+ * timeouts, errors, a missing route, or a reply the server itself built from the local coach
+ * (meta.source "fallback"). Both sides then give the same answer, and analytics stay honest.
  *
  * CONTRACT
  *   Request  (CoachApiRequest):  { text, locale, memory, history }
@@ -50,13 +49,6 @@ export interface CoachApiReply {
   preset?: string;
 }
 
-const CoachApiReplySchema = z.object({
-  safety: SafetySchema,
-  lead: z.string().min(1).max(400),
-  technique: PositiveTagSchema,
-  say: z.string().min(1).max(160).optional(),
-  preset: z.string().max(60).optional(),
-}) satisfies z.ZodType<CoachApiReply>;
 
 const PATH = "/api/coach";
 const TIMEOUT_MS = 8000;
@@ -106,8 +98,8 @@ export async function askCoach(request: CoachApiRequest): Promise<CoachApiReply 
     const json = response.headers.get("content-type")?.includes("application/json") ?? false;
     if (response.status === 404 || response.status === 405 || (response.ok && !json)) missing = true;
     if (response.status !== 200 || !json) return null;
-    const parsed = ApiResponseSchema(CoachApiReplySchema).safeParse(await response.json());
-    return parsed.success && parsed.data.ok ? parsed.data.data : null;
+    const parsed = ApiResponseSchema(CoachReplySchema).safeParse(await response.json());
+    return parsed.success && parsed.data.ok && parsed.data.meta.source === "ai" ? parsed.data.data : null;
   } catch {
     return null;   // network error, timeout or a body that is not JSON
   } finally {

@@ -1,3 +1,5 @@
+import { PRESETS } from "../data";
+
 export const TECHNIQUE_TAGS = [
   "name_feeling", "connect_first", "offer_choice", "playful", "when_then", "calm_limit", "labeled_praise",
   "threat", "yell_or_insult", "lecture", "dismiss_feeling", "why_question", "bribe",
@@ -86,5 +88,19 @@ export const DEBRIEF_OUTPUT_JSON_SCHEMA = {
     },
   },
   required: ["summary", "rewrites", "tonight_plan"],
+  additionalProperties: false,
+} as const;
+
+/** Sebastian's reply. `say` is "" and `preset` is "none" when there is nothing to add. */
+export const COACH_OUTPUT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    safety: TURN_OUTPUT_JSON_SCHEMA.properties.safety,
+    lead: { type: "string" },
+    technique: { type: "string", enum: [...POSITIVE_TAGS] },
+    say: { type: "string" },
+    preset: { type: "string", enum: [...PRESETS.map((preset) => preset.id), "none"] },
+  },
+  required: ["safety", "lead", "technique", "say", "preset"],
   additionalProperties: false,
 } as const;

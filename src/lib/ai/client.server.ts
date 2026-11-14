@@ -71,7 +71,7 @@ export async function callJson<T>(o: CallJsonOptions<T>): Promise<T> {
   }
 }
 
-export function logAiFailure(route: "turn" | "scenario" | "debrief", err: unknown): void {
+export function logAiFailure(route: "turn" | "scenario" | "debrief" | "coach", err: unknown): void {
   let reason = "unknown";
   if (err instanceof AiUnavailableError) {
     reason = err.reason;
