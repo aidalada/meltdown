@@ -161,6 +161,28 @@ export const ScenarioRequestSchema = z.object({
   temperament: TemperamentSchema,
 }) satisfies z.ZodType<ScenarioRequest>;
 
+export const ScenarioModelOutputSchema = z.object({
+  on_topic: z.boolean(),
+  safety: SafetySchema,
+  title: z.string(),
+  trigger: z.string(),
+  setting: z.string(),
+  opening_line: z.string(),
+  underlying_need: UnderlyingNeedSchema,
+});
+export type ScenarioModelOutput = z.infer<typeof ScenarioModelOutputSchema>;
+
+export const DebriefModelOutputSchema = z.object({
+  summary: z.string(),
+  rewrites: z.array(z.object({
+    turn_index: z.int(),
+    improved: z.string(),
+    technique: PositiveTagSchema,
+  })),
+  tonight_plan: z.array(PlanPhraseSchema),
+});
+export type DebriefModelOutput = z.infer<typeof DebriefModelOutputSchema>;
+
 const offTopic = z.object({ kind: z.literal("off_topic") });
 const safetyResult = z.object({ kind: z.literal("safety"), safety: SafetySchema.exclude(["none"]) });
 export const ScenarioResultSchema = z.discriminatedUnion("kind", [
