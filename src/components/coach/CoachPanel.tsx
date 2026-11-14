@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChildAvatar } from "@/components/ChildAvatar";
+import { ChildBadge } from "@/components/ChildBadge";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useCopy } from "@/content/i18n";
-import { ageGroupOf } from "@/lib/data";
 import type { CoachMemory } from "@/types/coach";
 
 interface CoachPanelProps {
@@ -50,7 +49,7 @@ export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelP
             <dl className="memory-list">
               {child && (
                 <div className="flex items-center gap-3">
-                  <ChildAvatar band="calm" speaking={false} thinking={false} name={child.name} age={ageGroupOf(child.ageYears)} size={44} showName={false} decorative />
+                  <ChildBadge years={child.ageYears} size={44} />
                   <div className="min-w-0">
                     <dt>{copy.coach.memoryChild}</dt>
                     <dd>{copy.coach.memoryChildValue(child.name, child.ageYears, copy.setup.temperaments[child.temperament])}</dd>

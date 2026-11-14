@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BackupBadge } from "@/components/BackupBadge";
 import { ChildAvatar } from "@/components/ChildAvatar";
 import { EndBanner } from "@/components/EndBanner";
+import { Icon } from "@/components/Icon";
 import { MoodMeter } from "@/components/MoodMeter";
 import { SafetyNotice } from "@/components/SafetyNotice";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -15,6 +16,7 @@ import { useCopy, useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSession } from "@/hooks/useSession";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
+import { isTexting } from "@/lib/age";
 import { MAX_TURNS } from "@/lib/constants";
 import { bandOf } from "@/lib/engine/mood";
 import { loadProfile, saveProfile } from "@/lib/storage";
@@ -56,14 +58,16 @@ function Rehearsal({ id }: { id: string }) {
   const [started, setStarted] = useState(false);
   const speakRef = useRef<(text: string) => void>(() => {});
 
-  useEffect(() => {
-    speakRef.current = (text: string) => {
-      if (profile.voiceOn && started) voice.speak(text);
-    };
-  });
-
   const onReply = useCallback((reply: string) => speakRef.current(reply), []);
   const { session, status, pending, pendingText, lastSource, safety, error, sendTurn, endSession, dismissSafety } = useSession(id, onReply);
+  // From 12 the rehearsal is a text chat with a teen: no 2D child, and texts are not read aloud.
+  const texting = session ? isTexting(session.scenario.ageYears) : false;
+
+  useEffect(() => {
+    speakRef.current = (text: string) => {
+      if (profile.voiceOn && started && !texting) voice.speak(text);
+    };
+  });
 
   if (status === "not_found" || !session) {
     return (
@@ -96,7 +100,7 @@ function Rehearsal({ id }: { id: string }) {
 
   function start() {
     setStarted(true);
-    if (profile.voiceOn) voice.speak(lastTurn ? lastTurn.childReply : s.scenario.openingLine);
+    if (profile.voiceOn && !texting) voice.speak(lastTurn ? lastTurn.childReply : s.scenario.openingLine);
   }
 
   function toDebrief() {
@@ -114,6 +118,27 @@ function Rehearsal({ id }: { id: string }) {
     router.push(`/practice/${s.id}/debrief`);
   }
 
+  // Shared by both layouts: what sits under the conversation, and the "Start rehearsal" card.
+  const controls = (
+    <>
+      {error === "rate_limited" && <p className="form-error" role="alert">{copy.rehearsal.rateLimited}</p>}
+      {ended && s.outcome !== "ended_by_parent" && (
+        <EndBanner outcome={s.outcome} name={s.scenario.childName} turns={s.turns.length} onDebrief={toDebrief} />
+      )}
+      {ended && s.outcome === "ended_by_parent" && (
+        <div><button className="btn btn-primary" type="button" onClick={toDebrief}>{copy.rehearsal.toDebrief}</button></div>
+      )}
+      {!ended && <TurnInput disabled={pending || !started} onSend={sendTurn} placeholder={texting ? copy.rehearsal.textPlaceholder : undefined} />}
+    </>
+  );
+  const startCard = (
+    <>
+      <h2 className="text-[22px]">{sceneText(s.scenario).title}</h2>
+      <p className="text-[15px] text-muted">{sceneText(s.scenario).setting}</p>
+      <button className="btn btn-primary btn-lg" type="button" onClick={start} autoFocus>{copy.rehearsal.startOverlay}</button>
+    </>
+  );
+
   return (
     <div className="wrap">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
@@ -124,45 +149,66 @@ function Rehearsal({ id }: { id: string }) {
         <div className="flex flex-wrap items-center gap-2">
           <span className="pill">{copy.rehearsal.turnOf(turnNumber, MAX_TURNS)}</span>
           {s.difficulty === "hard" && <span className="pill pill-accent">{copy.rehearsal.hard}</span>}
-          <Switch checked={profile.voiceOn} label={copy.rehearsal.voice} onToggle={() => updateProfile({ voiceOn: !profile.voiceOn })} />
+          {!texting && <Switch checked={profile.voiceOn} label={copy.rehearsal.voice} onToggle={() => updateProfile({ voiceOn: !profile.voiceOn })} />}
           <Switch checked={profile.coachHints} label={copy.rehearsal.hints} onToggle={() => updateProfile({ coachHints: !profile.coachHints })} />
           <button className="btn btn-secondary" type="button" onClick={end}>{copy.rehearsal.end}</button>
         </div>
       </div>
 
-      <div className="relative grid grid-cols-[minmax(0,1fr)] gap-4 min-[900px]:grid-cols-[340px_minmax(0,1fr)] min-[900px]:items-start min-[900px]:gap-6">
-        <aside className="card stage" aria-label={s.scenario.childName}>
-          <ChildAvatar key={s.turns.length} band={band} speaking={voice.speaking} thinking={pending} name={s.scenario.childName} age={s.scenario.ageGroup} pop={s.turns.length > 0} />
-          <MoodMeter value={s.mood} delta={lastTurn ? lastTurn.delta : null} deltaKey={s.turns.length} />
-          <div className="flex flex-wrap justify-center gap-1.5 max-[899px]:justify-start">
-            <BackupBadge visible={usedBackup} />
-          </div>
-          {pending && <ThinkingNote name={s.scenario.childName} />}
-        </aside>
-
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
-          <Transcript items={items} showHints={profile.coachHints} />
-          {error === "rate_limited" && <p className="form-error" role="alert">{copy.rehearsal.rateLimited}</p>}
-          {ended && s.outcome !== "ended_by_parent" && (
-            <EndBanner outcome={s.outcome} name={s.scenario.childName} turns={s.turns.length} onDebrief={toDebrief} />
-          )}
-          {ended && s.outcome === "ended_by_parent" && (
-            <div><button className="btn btn-primary" type="button" onClick={toDebrief}>{copy.rehearsal.toDebrief}</button></div>
-          )}
-          {!ended && <TurnInput disabled={pending || !started} onSend={sendTurn} />}
-        </div>
-
-        {!started && !ended && (
-          <div className="overlay">
-            <div className="card m-4 grid max-w-[360px] justify-items-center gap-3 p-6 text-center">
-              <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} age={s.scenario.ageGroup} size={120} showName={false} />
-              <h2 className="text-[22px]">{sceneText(s.scenario).title}</h2>
-              <p className="text-[15px] text-muted">{sceneText(s.scenario).setting}</p>
-              <button className="btn btn-primary btn-lg" type="button" onClick={start} autoFocus>{copy.rehearsal.startOverlay}</button>
+      {texting ? (
+        <div className="relative mx-auto grid w-full max-w-[560px] grid-cols-[minmax(0,1fr)] gap-3">
+          <div className="card texting">
+            <div className="texting-head">
+              <span className="texting-initial" aria-hidden="true">{s.scenario.childName.slice(0, 1)}</span>
+              <div className="min-w-0 flex-1">
+                <p className="leading-tight font-semibold">{s.scenario.childName}</p>
+                <p className="text-[13px] text-muted" aria-live="polite">{pending ? copy.rehearsal.typing : copy.rehearsal.online}</p>
+              </div>
+              <BackupBadge visible={usedBackup} />
+            </div>
+            <div className="texting-meter">
+              <MoodMeter value={s.mood} delta={lastTurn ? lastTurn.delta : null} deltaKey={s.turns.length} />
+            </div>
+            <div className="texting-body">
+              <Transcript items={items} showHints={profile.coachHints} variant="texting" />
             </div>
           </div>
-        )}
-      </div>
+          {controls}
+          {!started && !ended && (
+            <div className="overlay">
+              <div className="card m-4 grid max-w-[360px] justify-items-center gap-3 p-6 text-center">
+                <span className="child-badge-chat" style={{ width: 96, height: 96 }} aria-hidden="true"><Icon name="say" size={44} /></span>
+                {startCard}
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="relative grid grid-cols-[minmax(0,1fr)] gap-4 min-[900px]:grid-cols-[340px_minmax(0,1fr)] min-[900px]:items-start min-[900px]:gap-6">
+          <aside className="card stage" aria-label={s.scenario.childName}>
+            <ChildAvatar key={s.turns.length} band={band} speaking={voice.speaking} thinking={pending} name={s.scenario.childName} age={s.scenario.ageGroup} pop={s.turns.length > 0} />
+            <MoodMeter value={s.mood} delta={lastTurn ? lastTurn.delta : null} deltaKey={s.turns.length} />
+            <div className="flex flex-wrap justify-center gap-1.5 max-[899px]:justify-start">
+              <BackupBadge visible={usedBackup} />
+            </div>
+            {pending && <ThinkingNote name={s.scenario.childName} />}
+          </aside>
+
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-3">
+            <Transcript items={items} showHints={profile.coachHints} />
+            {controls}
+          </div>
+
+          {!started && !ended && (
+            <div className="overlay">
+              <div className="card m-4 grid max-w-[360px] justify-items-center gap-3 p-6 text-center">
+                <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} age={s.scenario.ageGroup} size={120} showName={false} />
+                {startCard}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {safety !== "none" && <SafetyNotice kind={safety} onContinue={dismissSafety} />}
     </div>

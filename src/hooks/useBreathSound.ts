@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-/** One breath, matching the SOS circle (globals.css `breathe`): 4 s in, 6 s out. */
+/** One breath of the wave: 4 s in, 6 s out. */
 const IN_S = 4;
 const CYCLE_S = 10;
 /** Loudness and brightness of the wave at its lowest point (between breaths) and at the top of the inhale. */

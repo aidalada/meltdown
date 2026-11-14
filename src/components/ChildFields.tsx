@@ -1,8 +1,7 @@
 "use client";
 
 import { useCopy } from "@/content/i18n";
-import { yearsForGroup } from "@/lib/age";
-import { ageGroupOf } from "@/lib/data";
+import { choiceOf, isTexting, yearsForChoice } from "@/lib/age";
 import type { Temperament } from "@/lib/types";
 import { AgePicker } from "./AgePicker";
 
@@ -22,9 +21,10 @@ export function ChildFields({ value, onChange }: { value: ChildValues; onChange(
       <div className="grid gap-2">
         <span className="field-label" id="child-age">{copy.setup.ageLabel}</span>
         <AgePicker
-          variant="cards" labelledBy="child-age" value={ageGroupOf(value.ageYears)}
-          onPick={(group) => onChange({ ...value, ageYears: yearsForGroup(group, value.ageYears) })}
+          variant="cards" labelledBy="child-age" value={choiceOf(value.ageYears)}
+          onPick={(choice) => onChange({ ...value, ageYears: yearsForChoice(choice, value.ageYears) })}
         />
+        {isTexting(value.ageYears) && <p className="text-[13px] font-medium text-primary" role="status">{copy.setup.teenNote}</p>}
       </div>
       <div className="grid min-w-0 gap-2">
         <span className="field-label" id="child-temp">{copy.setup.temperamentLabel}</span>

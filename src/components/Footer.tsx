@@ -9,7 +9,8 @@ export function Footer() {
     <footer className="mt-14 border-t border-line">
       <div className="wrap flex flex-wrap items-center gap-x-6 gap-y-3 py-6 pb-8 text-sm text-muted">
         <span>{copy.disclaimer.short}</span>
-        <nav aria-label="Footer" className="ml-auto flex gap-4">
+        <nav aria-label="Footer" className="ml-auto flex flex-wrap gap-x-4 gap-y-2">
+          <Link href="/about" className="text-muted">{copy.nav.about}</Link>
           <Link href="/approach" className="text-muted">{copy.nav.approach}</Link>
           <Link href="/pricing" className="text-muted">{copy.nav.pricing}</Link>
         </nav>

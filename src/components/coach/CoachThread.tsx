@@ -9,7 +9,8 @@ import { useCopy, useLocale, useTexts } from "@/content/i18n";
 import { TECHNIQUE_BY_TAG } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import type { Checkin } from "@/lib/storage";
-import type { AgeGroup, PositiveTag } from "@/lib/types";
+import type { AgeChoice } from "@/lib/age";
+import type { PositiveTag } from "@/lib/types";
 import type { CoachMessage } from "@/types/coach";
 
 interface CoachThreadProps {
@@ -22,7 +23,7 @@ interface CoachThreadProps {
   /** True while Sebastian still waits for the child's age. */
   pendingAge: boolean;
   rehearsing: boolean;
-  onPickAge(group: AgeGroup): void;
+  onPickAge(choice: AgeChoice): void;
   onCheckin(sessionId: string, result: Checkin["result"]): void;
   onRehearse(text: string, preset?: string): void;
 }

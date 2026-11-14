@@ -1,5 +1,5 @@
 import { TECHNIQUE_BY_TAG } from "./data";
-import type { Session } from "./types";
+import type { Session, TechniqueTag } from "./types";
 
 /** "YYYY-MM-DD" in the device's local time zone. */
 export function localDate(d: Date): string {
@@ -35,4 +35,36 @@ export function first30Stats(sessions: Session[]): First30 {
     calmReached: practiced.filter((s) => s.outcome === "calm_reached").length,
     bestPhrases: [...new Set(phrases)].slice(0, 3),
   };
+}
+
+export type Skill = "empathy" | "boundaries" | "control" | "choices";
+export const SKILLS: readonly Skill[] = ["control", "boundaries", "choices", "empathy"];
+
+/**
+ * Which techniques show each core skill. "plus" tags build the skill, "minus" tags work against it.
+ * Emotional control has no technique of its own: every turn without a harsh tag counts as a calm one.
+ */
+const SKILL_TAGS: Record<Skill, { plus: readonly TechniqueTag[]; minus: readonly TechniqueTag[] }> = {
+  empathy: { plus: ["name_feeling", "connect_first", "labeled_praise"], minus: ["dismiss_feeling", "why_question"] },
+  boundaries: { plus: ["calm_limit", "when_then"], minus: ["threat", "bribe"] },
+  control: { plus: [], minus: ["yell_or_insult", "lecture", "threat"] },
+  choices: { plus: ["offer_choice", "playful"], minus: ["threat", "bribe"] },
+};
+
+/**
+ * Core parenting skills, 0 to 100, from the techniques in the parent's rehearsals.
+ * score = 100 x good / (good + 2 x harmful + 2), counted in turns. The "+ 2" means a skill starts
+ * at 0 and grows with practice (2 good turns = 50, 6 = 75), and a harmful turn costs twice a good one.
+ * Deterministic, like the calm level: the same rehearsals always give the same scores.
+ */
+export function skillScores(sessions: Pick<Session, "turns">[]): Record<Skill, number> {
+  const turns = sessions.flatMap((s) => s.turns);
+  const score = (skill: Skill): number => {
+    const { plus, minus } = SKILL_TAGS[skill];
+    const has = (tags: readonly TechniqueTag[]) => turns.filter((t) => t.tags.some((g) => tags.includes(g.tag))).length;
+    const harmful = has(minus);
+    const good = skill === "control" ? turns.length - harmful : has(plus);
+    return Math.round((100 * good) / (good + 2 * harmful + 2));
+  };
+  return { empathy: score("empathy"), boundaries: score("boundaries"), control: score("control"), choices: score("choices") };
 }

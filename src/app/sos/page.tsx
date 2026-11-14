@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ChildBadge } from "@/components/ChildBadge";
 import { Icon } from "@/components/Icon";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { PageSkeleton } from "@/components/Skeleton";
 import { useTexts } from "@/content/i18n";
+import { sosPhrases } from "@/content/sos-phrases";
 import { useBreathSound } from "@/hooks/useBreathSound";
 import { useHydrated } from "@/hooks/useHydrated";
-import { PRESETS } from "@/lib/data";
-import { loadPlan } from "@/lib/storage";
+import { choiceOf, rangeOf } from "@/lib/age";
+import { DEFAULT_PROFILE, loadPlan, loadProfile } from "@/lib/storage";
 
 export default function SosPage() {
   const hydrated = useHydrated();
@@ -18,18 +20,18 @@ export default function SosPage() {
   return <Sos />;
 }
 
+/**
+ * Smart SOS: a cheat sheet for the middle of a meltdown. Three large phrases to say right now,
+ * chosen for the child's age and temperament from the browser profile. No reading, no choices.
+ */
 function Sos() {
-  const { copy, technique } = useTexts();
+  const { copy, locale, technique } = useTexts();
   const router = useRouter();
-  const [phrases] = useState(() => loadPlan()?.phrases ?? PRESETS.find((p) => p.id === "teeth-bedtime")?.planPhrases ?? []);
+  const [profile] = useState(() => loadProfile() ?? DEFAULT_PROFILE);
+  const [rehearsed] = useState(() => loadPlan()?.phrases ?? []);
   const sound = useBreathSound();
-  // Restarting the circle when the sound starts keeps the tone and the animation on the same breath.
-  const [cycle, setCycle] = useState(0);
-
-  function toggleSound() {
-    if (!sound.on) setCycle((c) => c + 1);
-    sound.toggle();
-  }
+  const phrases = sosPhrases(profile.ageYears, profile.temperament);
+  const age = copy.setup.ageRange(rangeOf(choiceOf(profile.ageYears)));
 
   function back() {
     if (window.history.length > 1) router.back();
@@ -37,29 +39,50 @@ function Sos() {
   }
 
   return (
-    <div className="wrap wrap-narrow grid grid-cols-[minmax(0,1fr)] justify-items-center gap-8 py-10 text-center">
-      <h1 className="text-[clamp(32px,6vw,52px)]">{copy.sos.title}</h1>
-      <div key={cycle} className="breath" aria-hidden="true">
-        <div className="breath-circle" />
-        <span className="breath-label breath-in">{copy.sos.breatheIn}</span>
-        <span className="breath-label breath-out">{copy.sos.breatheOut}</span>
-      </div>
-      <button type="button" className="chip-btn inline-flex items-center gap-2" aria-pressed={sound.on} onClick={toggleSound}>
-        <Icon name={sound.on ? "sound" : "soundOff"} size={18} />
-        {copy.sos.sound}
-      </button>
-      <section className="grid w-full max-w-[560px] gap-2.5">
-        <h2 className="eyebrow">{copy.sos.phrasesTitle}</h2>
-        {phrases.map((p) => (
-          <div key={p.phrase} className="card grid gap-1 px-5 py-4 text-left">
-            <span className="font-display text-xl leading-snug font-extrabold">“{p.phrase}”</span>
-            <span className="text-[13px] text-muted">{technique(p.technique).label}</span>
-          </div>
+    <div className="wrap wrap-narrow grid grid-cols-[minmax(0,1fr)] gap-6 py-6">
+      <header className="grid gap-2">
+        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-muted">
+          <ChildBadge years={profile.ageYears} size={32} />
+          {copy.sos.forChild(profile.childName, age, copy.setup.temperaments[profile.temperament])}
+          <Link href="/practice" className="font-semibold">{copy.sos.change}</Link>
+        </p>
+        <h1 className="text-[clamp(30px,7vw,48px)]">{copy.sos.sayNow}</h1>
+        <p className="text-lg text-muted">{copy.sos.lead}</p>
+      </header>
+
+      <ol className="sos-list">
+        {phrases.map((p, i) => (
+          <li key={p.phrase} className="sos-card">
+            <span className="sos-step" aria-hidden="true">{i + 1}</span>
+            <div className="grid min-w-0 gap-1.5">
+              <p className="sos-phrase" lang="en">{p.phrase}</p>
+              {locale === "ru" && <p className="sos-note text-[15px]">{p.ru}</p>}
+              <p className="sos-note text-[13px] font-semibold">{technique(p.technique).label}</p>
+            </div>
+          </li>
         ))}
-      </section>
-      <div className="flex flex-wrap justify-center gap-2.5">
+      </ol>
+
+      {rehearsed.length > 0 && (
+        <section className="grid gap-2" aria-labelledby="sos-rehearsed">
+          <h2 id="sos-rehearsed" className="eyebrow">{copy.sos.rehearsedTitle}</h2>
+          <ul className="m-0 grid list-none gap-2 p-0">
+            {rehearsed.map((p) => (
+              <li key={p.phrase} className="card px-4 py-3">
+                <span className="font-display text-[17px] leading-snug font-extrabold" lang="en">“{p.phrase}”</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2.5">
         <button type="button" className="btn btn-secondary btn-lg" onClick={back}>{copy.sos.back}</button>
-        <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/coach">
+        <button type="button" className="chip-btn inline-flex items-center gap-2" aria-pressed={sound.on} onClick={sound.toggle}>
+          <Icon name={sound.on ? "sound" : "soundOff"} size={18} />
+          {copy.sos.sound}
+        </button>
+        <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/">
           <SebastianAvatar size={32} decorative />
           {copy.coach.sosLink}
         </Link>

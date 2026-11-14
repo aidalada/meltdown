@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
 import { textsFor } from "@/content/locale";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
-import { AGE_OPTIONS, yearsForGroup } from "./age";
+import { AGE_OPTIONS, choiceOf, isTexting, yearsForChoice } from "./age";
 import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "./coach";
 import { ageGroupOf } from "./data";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
@@ -226,18 +226,28 @@ describe("Sebastian in Russian", () => {
 });
 
 describe("age ranges", () => {
-  it("cover ages 2 to 12 with the engine's own age groups", () => {
-    for (const option of AGE_OPTIONS) expect(ageGroupOf(option.years)).toBe(option.group);
-    expect(AGE_OPTIONS.map((o) => o.range)).toEqual(["2–3", "4–5", "6–8", "9–12"]);
+  it("cover ages 2 to 12: the engine's four age groups, then 12+ as the texting mode", () => {
+    for (const option of AGE_OPTIONS) {
+      expect(choiceOf(option.years)).toBe(option.id);
+      if (option.id !== "teen") expect(ageGroupOf(option.years)).toBe(option.id);
+    }
+    expect(AGE_OPTIONS.map((o) => o.range)).toEqual(["2–3", "4–5", "6–8", "9–11", "12+"]);
+    expect(Math.max(...AGE_OPTIONS.map((o) => o.years))).toBeLessThanOrEqual(12);   // the API's limit
+  });
+
+  it("switch to a text chat from 12", () => {
+    expect(isTexting(11)).toBe(false);
+    expect(isTexting(12)).toBe(true);
   });
 
   it("keep an age that is already inside the chosen range", () => {
-    expect(yearsForGroup("preschool", 5)).toBe(5);
-    expect(yearsForGroup("preteen", 5)).toBe(10);
+    expect(yearsForChoice("preschool", 5)).toBe(5);
+    expect(yearsForChoice("preteen", 5)).toBe(10);
+    expect(yearsForChoice("teen", 5)).toBe(12);
   });
 
   it("read naturally in Russian", () => {
     const { setup } = textsFor("ru").copy;
-    expect(AGE_OPTIONS.map((o) => setup.ageRange(o.range))).toEqual(["2–3 года", "4–5 лет", "6–8 лет", "9–12 лет"]);
+    expect(AGE_OPTIONS.map((o) => setup.ageRange(o.range))).toEqual(["2–3 года", "4–5 лет", "6–8 лет", "9–11 лет", "12+ лет"]);
   });
 });

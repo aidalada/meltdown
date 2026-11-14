@@ -7,7 +7,7 @@ import type { Texts } from "@/content/locale";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import { postScenario, RateLimitedError } from "@/lib/api-client";
-import { rangeOf, yearsForGroup } from "@/lib/age";
+import { rangeOf, yearsForChoice, type AgeChoice } from "@/lib/age";
 import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "@/lib/coach";
 import { askCoach, coachRequest } from "@/lib/coach-client";
 import { ageGroupOf, PRESETS } from "@/lib/data";
@@ -16,7 +16,7 @@ import {
   addCheckin, DEFAULT_PROFILE, forgetEverything, listSessions, loadCheckins, loadCoachThread, loadPlan, loadProfile,
   saveCoachThread, saveProfile, type Checkin,
 } from "@/lib/storage";
-import type { AgeGroup, Scenario } from "@/lib/types";
+import type { Scenario } from "@/lib/types";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
 
 const DAY_MS = 86_400_000;
@@ -105,12 +105,12 @@ export function useCoach() {
   }
 
   /** The parent answers Sebastian's age question with one tap; the answer is kept in the browser profile. */
-  function pickAge(group: AgeGroup) {
+  function pickAge(choice: AgeChoice) {
     const now = clock();
     const profile = loadProfile() ?? DEFAULT_PROFILE;
-    saveProfile({ ...profile, ageYears: yearsForGroup(group, profile.ageYears) });
+    saveProfile({ ...profile, ageYears: yearsForChoice(choice, profile.ageYears) });
     setMemory(readMemory());
-    commit([...messages, { role: "parent", at: now.toISOString(), text: copy.setup.ageRange(rangeOf(group)) }, ageReply(now, texts)]);
+    commit([...messages, { role: "parent", at: now.toISOString(), text: copy.setup.ageRange(rangeOf(choice)) }, ageReply(now, texts)]);
   }
 
   function begin(scenario: Scenario) {
