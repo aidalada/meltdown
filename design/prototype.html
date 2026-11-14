@@ -1,0 +1,1324 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Meltdown Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Nunito:wght@600;800&display=swap">
+<style>
+/* Layout: one app, six hash views. Rehearsal = sticky child stage + chat column.
+   Tokens copy SPEC 13.1 exactly; *-soft and *-text are prototype helpers for chips. */
+:root {
+  --ink: #1B2140;
+  --muted: #5B6478;
+  --line: #E3E7EF;
+  --bg: #F6F7FB;
+  --surface: #FFFFFF;
+  --primary: #2F5BEA;
+  --primary-ink: #FFFFFF;
+  --accent: #FF8A3D;
+  --good: #1E8E5A;
+  --bad: #D93D42;
+  --mood-meltdown: #E5484D;
+  --mood-upset: #F76B15;
+  --mood-grumpy: #F5A524;
+  --mood-warming: #4C9AFF;
+  --mood-calm: #30A46C;
+  --radius-card: 16px;
+
+  --primary-soft: #E9EEFD;
+  --good-soft: #E5F3EB;
+  --good-text: #17704A;
+  --bad-soft: #FBE8E9;
+  --bad-text: #B3282E;
+  --accent-soft: #FFF1E7;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Nunito", ui-rounded, system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.55 var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3 { font-family: var(--font-display); font-weight: 800; line-height: 1.15; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+p { margin: 0; }
+a { color: var(--primary); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (min-width: 768px) {
+  .wrap {
+    padding-left: max(24px, env(safe-area-inset-left, 0px));
+    padding-right: max(24px, env(safe-area-inset-right, 0px));
+  }
+}
+.narrow { max-width: 880px; }
+
+/* ---------- prototype note ---------- */
+.proto-note { background: var(--ink); color: #DDE3F5; font-size: 13px; }
+.proto-note .wrap { padding-block: 8px; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.proto-note b { color: #FFFFFF; font-weight: 600; }
+
+/* ---------- buttons, pills ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 0 18px; border-radius: 12px; border: 1px solid transparent;
+  font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer;
+  transition: background-color .15s, border-color .15s, transform .1s;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary); color: var(--primary-ink); }
+.btn-primary:hover { background: #2450D6; }
+.btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn-secondary:hover { border-color: #C9D0DD; }
+.btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn-lg { min-height: 52px; padding: 0 24px; font-size: 16px; border-radius: 14px; }
+.btn[disabled] { opacity: .5; cursor: not-allowed; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border-radius: 999px; background: var(--surface); border: 1px solid var(--line);
+  font-size: 13px; font-weight: 600; color: var(--muted); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.eyebrow { font-size: 13px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); }
+.muted { color: var(--muted); }
+
+/* ---------- header / footer ---------- */
+.site-header .wrap { display: flex; align-items: center; gap: 16px; min-height: 64px; padding-block: 8px; }
+.logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); font-family: var(--font-display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; }
+.logo-mark { display: inline-flex; gap: 3px; }
+.logo-mark i { width: 6px; height: 18px; border-radius: 3px; display: block; }
+.nav { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+.nav a.link { color: var(--ink); text-decoration: none; font-weight: 500; font-size: 15px; padding: 10px 10px; border-radius: 10px; }
+.nav a.link:hover { background: var(--surface); }
+.nav .btn { min-height: 40px; }
+.offline-badge { background: var(--accent-soft); border-color: #FFD3B5; color: #9A4A12; }
+@media (max-width: 639px) {
+  .nav a.link.hide-sm { display: none; }
+  .nav .btn { padding: 0 12px; font-size: 14px; }
+}
+.site-footer { border-top: 1px solid var(--line); margin-top: 56px; }
+.site-footer .wrap { padding-block: 24px 32px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; font-size: 14px; color: var(--muted); }
+.site-footer nav { margin-left: auto; display: flex; gap: 16px; }
+.site-footer a { color: var(--muted); }
+
+/* ---------- landing ---------- */
+.hero { padding-block: 32px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 32px; align-items: center; }
+@media (min-width: 900px) { .hero { grid-template-columns: 1.1fr .9fr; padding-block: 56px 72px; gap: 48px; } }
+.hero-copy { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--muted); }
+.kicker .clock { font-family: var(--font-display); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.hero h1 { font-size: clamp(34px, 6.2vw, 56px); }
+.hero .sub { font-size: 18px; color: var(--muted); max-width: 34em; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 6px; }
+.hero-cta .note { font-size: 14px; color: var(--muted); }
+
+.preview { padding: 20px; display: grid; gap: 16px; min-width: 0; }
+.preview-stage { display: flex; gap: 16px; align-items: center; }
+.preview-stage .who { min-width: 0; flex: 1; display: grid; gap: 10px; }
+.preview .bubble { font-size: 15px; }
+.preview-moves { border-top: 1px dashed var(--line); padding-top: 14px; display: grid; gap: 10px; }
+.preview-moves .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.how { padding-block: 16px 8px; display: grid; gap: 20px; }
+.how h2 { font-size: 28px; }
+.steps { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .steps { grid-template-columns: repeat(3, 1fr); } }
+.step { padding: 20px; display: grid; gap: 8px; align-content: start; }
+.step-n { width: 32px; height: 32px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; }
+.step h3 { font-size: 19px; }
+.step p { color: var(--muted); font-size: 15px; }
+
+.trust { margin-top: 40px; display: grid; gap: 16px; padding: 24px; border-radius: var(--radius-card); background: var(--primary-soft); }
+@media (min-width: 768px) { .trust { grid-template-columns: 1fr 1fr; gap: 32px; padding: 32px; } }
+.trust .stat { font-family: var(--font-display); font-weight: 800; font-size: 24px; line-height: 1.25; }
+.trust .src { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.trust .methods { color: var(--ink); font-size: 16px; align-self: center; }
+.cta-repeat { margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.cta-repeat h2 { font-size: 28px; }
+
+/* ---------- setup ---------- */
+.page-head { padding-block: 28px 20px; display: grid; gap: 8px; }
+.page-head h1 { font-size: clamp(28px, 4.6vw, 40px); }
+.child-card { padding: 16px; display: grid; gap: 14px; }
+.child-card .row { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
+@media (min-width: 768px) { .child-card .row { grid-template-columns: 140px 1fr 160px; align-items: end; } }
+.child-card .temp-field { grid-column: 1 / -1; order: 3; }
+@media (min-width: 768px) { .child-card .temp-field { grid-column: auto; order: 0; } }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field label, .field .label { font-size: 14px; font-weight: 600; }
+.select, .textarea {
+  width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 12px;
+  min-height: 44px; padding: 10px 12px;
+}
+.select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 18px) 19px, calc(100% - 13px) 19px; background-size: 5px 5px; background-repeat: no-repeat; padding-right: 32px; }
+.textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+.hint { font-size: 13px; color: var(--muted); }
+.seg { display: flex; padding: 3px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; gap: 2px; }
+.seg button { flex: 1; min-height: 38px; border: 0; background: transparent; border-radius: 9px; font-weight: 600; font-size: 14px; color: var(--muted); cursor: pointer; padding: 0 8px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(27,33,64,.12); }
+
+.tabs { display: flex; gap: 4px; margin-top: 20px; border-bottom: 1px solid var(--line); }
+.tabs button { border: 0; background: transparent; padding: 12px 14px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; min-height: 44px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--primary); }
+.tabpanel { padding-top: 20px; display: grid; gap: 14px; }
+.moment-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.counter { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.form-error { color: var(--bad-text); font-size: 14px; font-weight: 500; }
+.presets { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .presets { grid-template-columns: repeat(3, 1fr); } }
+.preset { text-align: left; padding: 16px; display: grid; gap: 10px; cursor: pointer; align-content: start; transition: border-color .15s, transform .15s; }
+.preset:hover { border-color: var(--primary); transform: translateY(-2px); }
+.preset-top { display: flex; gap: 12px; align-items: center; }
+.preset h3 { font-size: 18px; }
+.preset .meta { font-size: 13px; color: var(--muted); font-weight: 600; }
+.preset .setting { font-size: 14px; color: var(--muted); }
+.preset .opening { font-size: 14px; background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+
+/* ---------- rehearsal ---------- */
+.r-top { padding-block: 16px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; }
+.r-title { min-width: 0; flex: 1 1 260px; }
+.r-title h1 { font-size: 22px; }
+.r-title p { font-size: 14px; color: var(--muted); }
+.r-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.switch { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 12px 0 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 14px; font-weight: 600; }
+.switch .knob { width: 30px; height: 18px; border-radius: 999px; background: var(--line); position: relative; transition: background-color .15s; }
+.switch .knob::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--surface); transition: transform .15s; box-shadow: 0 1px 2px rgba(27,33,64,.25); }
+.switch[aria-checked="true"] .knob { background: var(--primary); }
+.switch[aria-checked="true"] .knob::after { transform: translateX(12px); }
+
+.r-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; position: relative; }
+@media (min-width: 900px) { .r-grid { grid-template-columns: 340px 1fr; gap: 24px; align-items: start; } }
+.stage { padding: 20px; display: grid; gap: 14px; justify-items: center; }
+@media (min-width: 900px) { .stage { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); } }
+.stage .child-name { font-family: var(--font-display); font-weight: 800; font-size: 20px; margin-top: -6px; }
+.stage .think-note { font-size: 13px; color: var(--muted); min-height: 18px; }
+.stage .meter { width: 100%; }
+.stage .badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+@media (max-width: 899px) {
+  .stage { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; grid-template-columns: auto 1fr; justify-items: stretch; align-items: center; padding: 12px; gap: 6px 14px; border-radius: 0 0 var(--radius-card) var(--radius-card); border-top: 0; }
+  .stage .avatar-slot { grid-row: span 3; }
+  .stage .child-name { margin: 0; font-size: 18px; }
+  .stage .think-note { display: none; }
+  .stage .badges { justify-content: flex-start; }
+}
+
+.meter { display: grid; gap: 8px; }
+.meter-track { position: relative; display: flex; height: 14px; border-radius: 999px; overflow: visible; }
+.meter-track .z { display: block; height: 100%; }
+.meter-track .z:first-child { border-radius: 999px 0 0 999px; }
+.meter-track .z:last-child { border-radius: 0 999px 999px 0; }
+.meter-marker { position: absolute; top: 50%; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; background: var(--surface); border: 4px solid var(--ink); transform: translateY(-50%); transition: left .5s cubic-bezier(.3,.7,.3,1); box-shadow: 0 1px 3px rgba(27,33,64,.3); }
+.meter-label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; min-height: 26px; }
+.delta-chip { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 999px; font-size: 13px; font-weight: 700; opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s; }
+.delta-chip.show { opacity: 1; transform: none; }
+.delta-chip.up { background: var(--good-soft); color: var(--good-text); }
+.delta-chip.down { background: var(--bad-soft); color: var(--bad-text); }
+.delta-chip.flat { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+
+.chat { display: grid; gap: 12px; min-width: 0; }
+.transcript { display: flex; flex-direction: column; gap: 12px; padding: 4px 0 8px; min-height: 200px; }
+.msg { display: flex; flex-direction: column; gap: 6px; max-width: 86%; }
+.msg.child { align-self: flex-start; align-items: flex-start; }
+.msg.parent { align-self: flex-end; align-items: flex-end; }
+.bubble { padding: 10px 14px; border-radius: 18px; font-size: 16px; line-height: 1.45; overflow-wrap: anywhere; }
+.msg.child .bubble, .preview .bubble.child-b { background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
+.msg.parent .bubble { background: var(--primary); color: var(--primary-ink); border-bottom-right-radius: 6px; }
+.msg .chips { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.msg { scroll-margin-bottom: 150px; scroll-margin-top: 16px; }
+@media (max-width: 899px) { .msg { scroll-margin-top: 190px; } }
+.msg.enter { animation: rise .25s ease-out; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.typing { display: inline-flex; gap: 4px; padding: 14px 16px; }
+.typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); display: block; animation: blink 1s infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; }
+.typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+.tag-chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tag-chip.pos { background: var(--good-soft); color: var(--good-text); }
+.tag-chip.neg { background: var(--bad-soft); color: var(--bad-text); }
+.tag-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+.turn-input-wrap { position: sticky; bottom: 0; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); padding-top: 8px; background: linear-gradient(to bottom, rgba(246,247,251,0), var(--bg) 24%); z-index: 4; }
+.turn-input { display: flex; gap: 8px; align-items: flex-end; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 8px; box-shadow: 0 6px 24px rgba(27,33,64,.10); }
+.turn-input textarea { flex: 1; min-width: 0; border: 0; resize: none; background: transparent; padding: 10px 8px; min-height: 44px; max-height: 140px; line-height: 1.45; font-size: 16px; }
+.turn-input textarea:focus-visible { outline: none; }
+.turn-input:focus-within { border-color: var(--primary); }
+.icon-btn { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--ink); }
+.icon-btn.listening { background: var(--bad-soft); border-color: #F3B7BA; color: var(--bad-text); }
+.icon-btn svg { width: 20px; height: 20px; }
+.ti-meta { display: flex; justify-content: space-between; gap: 8px; padding: 6px 4px 0; font-size: 13px; color: var(--muted); min-height: 24px; }
+
+.endbanner { padding: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; justify-content: space-between; }
+.endbanner.success { background: var(--good-soft); border-color: #BFE3CE; }
+.endbanner .eb-title { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+
+.overlay { position: absolute; inset: -8px; z-index: 6; display: grid; place-items: center; background: rgba(246,247,251,.72); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); border-radius: var(--radius-card); }
+.overlay-card { padding: 24px; display: grid; gap: 12px; justify-items: center; text-align: center; max-width: 360px; margin: 16px; }
+.overlay-card h2 { font-size: 22px; }
+.overlay-card p { color: var(--muted); font-size: 15px; }
+
+.backup-badge { background: var(--accent-soft); border-color: #FFD3B5; color: #9A4A12; cursor: help; }
+
+/* ---------- avatar ---------- */
+.avatar svg { display: block; overflow: visible; }
+.avatar .halo { transition: fill .4s; }
+.avatar .mouth { transform-origin: 100px 140px; }
+.avatar.speaking .mouth { animation: talk .12s infinite alternate ease-in-out; }
+@keyframes talk { 0% { transform: scaleY(1); } 50% { transform: scaleY(.6); } 100% { transform: scaleY(1.15); } }
+.avatar .tear-fall { animation: fall 1.2s infinite ease-in; }
+.avatar .tear-fall.r { animation-delay: .5s; }
+@keyframes fall { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(22px); opacity: 0; } }
+.avatar .think-dot { animation: blink 1s infinite; }
+.avatar .think-dot.d2 { animation-delay: .15s; }
+.avatar .think-dot.d3 { animation-delay: .3s; }
+.avatar .face-g { transition: transform .3s; }
+.avatar.pop .face-g { animation: pop .35s ease-out; transform-origin: 100px 110px; }
+@keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
+
+/* ---------- debrief ---------- */
+.db { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding-top: 8px; }
+.db-section { padding: 20px; display: grid; gap: 14px; min-width: 0; }
+@media (min-width: 768px) { .db-section { padding: 24px; } }
+.db-section > h2 { font-size: 22px; }
+.db-hero { display: grid; gap: 14px; }
+.db-hero .summary { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 3.4vw, 30px); line-height: 1.25; text-wrap: balance; }
+.stats { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stat-box { display: grid; gap: 2px; padding: 10px 14px; border-radius: 12px; background: var(--bg); min-width: 96px; }
+.stat-box .k { font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.stat-box .v { font-family: var(--font-display); font-weight: 800; font-size: 22px; font-variant-numeric: tabular-nums; }
+.outcome-badge { align-self: center; }
+.outcome-badge.calm_reached { background: var(--good-soft); color: var(--good-text); border-color: #BFE3CE; }
+.chart-wrap { overflow-x: auto; }
+.chart-wrap svg { width: 100%; height: auto; display: block; }
+.cards-2 { display: grid; gap: 12px; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .cards-2 { grid-template-columns: 1fr 1fr; } }
+.tcard { padding: 16px; display: grid; gap: 8px; align-content: start; background: var(--bg); border-radius: 14px; }
+.tcard .t-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tcard h3 { font-size: 17px; }
+.tcard p { font-size: 15px; color: var(--muted); }
+.tcard .src { font-size: 13px; }
+.rewrite { padding: 16px; display: grid; gap: 10px; background: var(--bg); border-radius: 14px; }
+.rewrite .was { color: var(--muted); font-size: 15px; }
+.rewrite .was s { text-decoration-color: var(--bad); text-decoration-thickness: 2px; }
+.rewrite .better { font-weight: 600; font-size: 17px; }
+.rewrite .lbl { font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+.rewrite .lbl.try { color: var(--good-text); }
+.plan { background: var(--ink); color: #FFFFFF; border-color: var(--ink); }
+.plan > h2 { color: #FFFFFF; }
+.plan-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.plan-list li { display: grid; gap: 4px; padding: 14px 16px; border-radius: 14px; background: rgba(255,255,255,.08); }
+.plan-list .phrase { font-family: var(--font-display); font-weight: 800; font-size: 19px; line-height: 1.3; }
+.plan-list .tech { font-size: 13px; color: #B9C2E0; }
+.plan-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.plan .btn-secondary { background: #FFFFFF; color: var(--ink); border-color: #FFFFFF; }
+.plan .btn-ghost { color: #FFFFFF; border-color: rgba(255,255,255,.35); }
+.db-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.disclaimer-short { font-size: 13px; color: var(--muted); }
+.skeleton { height: 18px; border-radius: 8px; background: linear-gradient(90deg, var(--line), #EEF1F6, var(--line)); background-size: 200% 100%; animation: shimmer 1.2s infinite linear; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* ---------- pricing, approach ---------- */
+.price-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); margin-top: 8px; }
+@media (min-width: 768px) { .price-grid { grid-template-columns: 1fr 1fr; } }
+.price { padding: 24px; display: grid; gap: 14px; align-content: start; }
+.price.featured { border: 2px solid var(--primary); }
+.price .p-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.price h2 { font-size: 20px; }
+.price .amount { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums; }
+.price .amount .per { font-family: var(--font-sans); font-size: 16px; font-weight: 500; color: var(--muted); }
+.save-badge { background: var(--primary-soft); color: var(--primary); border-color: #CBD6FA; }
+.includes { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.includes li { display: flex; gap: 10px; align-items: flex-start; }
+.includes svg { flex: none; margin-top: 3px; color: var(--good); }
+.test-note { padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); color: #7A3A0E; font-size: 14px; }
+.thanks { color: var(--good-text); font-weight: 600; font-size: 14px; }
+.tech-list { display: grid; gap: 10px; }
+.tech-row { padding: 14px 16px; display: grid; gap: 4px; }
+.tech-row .t-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.tech-row h3 { font-size: 16px; font-family: var(--font-sans); font-weight: 600; }
+.tech-row p { font-size: 15px; color: var(--muted); }
+.prose { display: grid; gap: 12px; max-width: 68ch; }
+.prose h2 { font-size: 22px; margin-top: 16px; }
+
+/* ---------- modal ---------- */
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(27,33,64,.5); padding: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.modal-card { max-width: 460px; width: 100%; padding: 24px; display: grid; gap: 14px; }
+.modal-card h2 { font-size: 22px; }
+.modal-card .numbers { display: grid; gap: 8px; }
+.modal-card .numbers a { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); text-decoration: none; color: var(--ink); font-weight: 600; }
+.modal-card .numbers a span { font-variant-numeric: tabular-nums; color: var(--primary); user-select: all; }
+
+.view { padding-bottom: 8px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+
+<div class="proto-note"><div class="wrap"><b>Design prototype</b><span>The child's replies come from the built-in backup coach, so they are simpler than the real AI's. The calm math is the real one from SPEC section 8.</span></div></div>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="logo" href="#home" aria-label="Meltdown home">
+      <span class="logo-mark" aria-hidden="true"><i style="background:var(--mood-meltdown)"></i><i style="background:var(--mood-grumpy)"></i><i style="background:var(--mood-calm)"></i></span>
+      <span data-copy="brand.name"></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <span class="pill offline-badge" id="offline-badge" hidden data-copy="rehearsal.offline"></span>
+      <a class="link hide-sm" href="#pricing" data-copy="nav.pricing"></a>
+      <a class="link hide-sm" href="#approach" data-copy="nav.approach"></a>
+      <a class="btn btn-primary" href="#practice" data-copy="nav.start"></a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- ================= LANDING ================= -->
+  <section class="view" id="view-home" data-view="home">
+    <div class="wrap">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="kicker"><span data-copy="landing.kicker"></span></p>
+          <h1 data-copy="landing.title"></h1>
+          <p class="sub" data-copy="landing.subtitle"></p>
+          <div class="hero-cta">
+            <a class="btn btn-primary btn-lg" href="#practice" data-copy="landing.cta"></a>
+            <span class="note" data-copy="landing.ctaNote"></span>
+          </div>
+        </div>
+        <div class="card preview" aria-label="Example rehearsal">
+          <div class="preview-stage">
+            <div class="avatar" id="hero-avatar"></div>
+            <div class="who">
+              <div class="bubble child-b">NO! I don't want to brush my teeth!</div>
+              <div class="meter" id="hero-meter"></div>
+            </div>
+          </div>
+          <div class="preview-moves">
+            <p class="eyebrow" data-copy="landing.movesTitle"></p>
+            <div class="chips" id="hero-chips"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="how">
+        <h2 data-copy="landing.howTitle"></h2>
+        <div class="steps" id="how-steps"></div>
+      </div>
+
+      <div class="trust">
+        <div>
+          <p class="stat" data-copy="landing.stat"></p>
+          <p class="src" data-copy="landing.statSource"></p>
+        </div>
+        <p class="methods" data-copy="landing.trust"></p>
+      </div>
+
+      <div class="cta-repeat">
+        <h2 data-copy="brand.tagline"></h2>
+        <a class="btn btn-primary btn-lg" href="#practice" data-copy="landing.cta"></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= SETUP ================= -->
+  <section class="view" id="view-practice" data-view="practice" hidden>
+    <div class="wrap narrow">
+      <div class="page-head">
+        <h1 data-copy="setup.title"></h1>
+      </div>
+
+      <div class="card child-card">
+        <p class="eyebrow" data-copy="setup.childTitle"></p>
+        <div class="row">
+          <div class="field">
+            <label for="f-age" data-copy="setup.ageLabel"></label>
+            <select class="select" id="f-age"></select>
+          </div>
+          <div class="field temp-field">
+            <span class="label" id="f-temp-label" data-copy="setup.temperamentLabel"></span>
+            <div class="seg" role="group" aria-labelledby="f-temp-label" id="f-temp"></div>
+          </div>
+          <div class="field">
+            <label for="f-name" data-copy="setup.nameLabel"></label>
+            <select class="select" id="f-name"></select>
+          </div>
+        </div>
+        <p class="hint" data-copy="setup.nameHint"></p>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Moment type">
+        <button role="tab" id="tab-today" aria-controls="panel-today" aria-selected="true" data-copy="setup.tabToday"></button>
+        <button role="tab" id="tab-common" aria-controls="panel-common" aria-selected="false" data-copy="setup.tabCommon"></button>
+      </div>
+
+      <form class="tabpanel" id="panel-today" role="tabpanel" aria-labelledby="tab-today" novalidate>
+        <div class="field">
+          <label for="f-moment" data-copy="setup.momentLabel"></label>
+          <textarea class="textarea" id="f-moment" maxlength="600"></textarea>
+        </div>
+        <p class="form-error" id="f-moment-error" hidden></p>
+        <div class="moment-foot">
+          <span class="counter" id="f-moment-count">0/600</span>
+          <button class="btn btn-primary btn-lg" type="submit" id="f-start" data-copy="setup.start"></button>
+        </div>
+      </form>
+
+      <div class="tabpanel" id="panel-common" role="tabpanel" aria-labelledby="tab-common" hidden>
+        <div class="presets" id="presets"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= REHEARSAL ================= -->
+  <section class="view" id="view-rehearsal" data-view="rehearsal" hidden>
+    <div class="wrap">
+      <div class="r-top">
+        <div class="r-title">
+          <h1 id="r-title"></h1>
+          <p id="r-setting"></p>
+        </div>
+        <div class="r-controls">
+          <span class="pill" id="r-turn"></span>
+          <button class="switch" type="button" role="switch" id="sw-voice" aria-checked="true"><span class="knob" aria-hidden="true"></span><span data-copy="rehearsal.voice"></span></button>
+          <button class="switch" type="button" role="switch" id="sw-hints" aria-checked="true"><span class="knob" aria-hidden="true"></span><span data-copy="rehearsal.hints"></span></button>
+          <button class="btn btn-secondary" type="button" id="r-end" data-copy="rehearsal.end"></button>
+        </div>
+      </div>
+
+      <div class="r-grid" id="r-grid">
+        <aside class="card stage" aria-label="Practice child">
+          <div class="avatar-slot"><div class="avatar" id="r-avatar"></div></div>
+          <p class="child-name" id="r-name"></p>
+          <div class="meter" id="r-meter"></div>
+          <div class="badges"><span class="pill backup-badge" id="r-backup" hidden tabindex="0"></span></div>
+          <p class="think-note" id="r-think-note" aria-live="polite"></p>
+        </aside>
+
+        <div class="chat">
+          <div class="transcript" id="r-transcript" aria-live="polite"></div>
+          <div id="r-endbanner" hidden></div>
+          <div class="turn-input-wrap" id="r-input-wrap">
+            <form class="turn-input" id="r-form">
+              <label class="visually-hidden" for="r-text" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Your words</label>
+              <textarea id="r-text" rows="1" maxlength="400"></textarea>
+              <button type="button" class="icon-btn" id="r-mic">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+              </button>
+              <button type="submit" class="btn btn-primary" id="r-send">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+                <span data-copy="rehearsal.send"></span>
+              </button>
+            </form>
+            <div class="ti-meta"><span id="r-mic-note"></span><span class="counter" id="r-count"></span></div>
+          </div>
+        </div>
+
+        <div class="overlay" id="r-overlay" hidden>
+          <div class="card overlay-card">
+            <div class="avatar" id="ov-avatar"></div>
+            <h2 id="ov-title"></h2>
+            <p id="ov-setting"></p>
+            <button class="btn btn-primary btn-lg" type="button" id="ov-start" data-copy="rehearsal.startOverlay"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= DEBRIEF ================= -->
+  <section class="view" id="view-debrief" data-view="debrief" hidden>
+    <div class="wrap narrow">
+      <div class="page-head">
+        <p class="eyebrow" id="db-scenario"></p>
+        <h1 data-copy="debrief.howItWent"></h1>
+      </div>
+      <div class="db" id="db"></div>
+    </div>
+  </section>
+
+  <!-- ================= PRICING ================= -->
+  <section class="view" id="view-pricing" data-view="pricing" hidden>
+    <div class="wrap narrow">
+      <div class="page-head">
+        <h1 data-copy="pricing.title"></h1>
+        <p class="muted" data-copy="pricing.trial"></p>
+        <p class="thanks" id="trial-day" hidden></p>
+      </div>
+      <div class="price-grid">
+        <div class="card price">
+          <div class="p-head"><h2 data-copy="pricing.monthly.name"></h2></div>
+          <p class="amount"><span data-copy-inline="pricing.monthly.price"></span><span class="per" data-copy="pricing.monthly.per"></span></p>
+          <button class="btn btn-secondary btn-lg buy" type="button" data-plan="monthly" data-copy="pricing.monthly.cta"></button>
+        </div>
+        <div class="card price featured">
+          <div class="p-head"><h2 data-copy="pricing.yearly.name"></h2><span class="pill save-badge" data-copy="pricing.yearly.badge"></span></div>
+          <p class="amount"><span data-copy-inline="pricing.yearly.price"></span><span class="per" data-copy="pricing.yearly.per"></span></p>
+          <button class="btn btn-primary btn-lg buy" type="button" data-plan="yearly" data-copy="pricing.yearly.cta"></button>
+        </div>
+      </div>
+      <p class="thanks" id="buy-thanks" hidden data-copy="pricing.waitlistThanks" style="margin-top:12px"></p>
+      <div class="card" style="padding:20px;margin-top:16px;display:grid;gap:12px">
+        <h2 style="font-size:18px" data-copy="pricing.includesTitle"></h2>
+        <ul class="includes" id="includes"></ul>
+      </div>
+      <p class="test-note" style="margin-top:16px" data-copy="pricing.testNote"></p>
+    </div>
+  </section>
+
+  <!-- ================= APPROACH ================= -->
+  <section class="view" id="view-approach" data-view="approach" hidden>
+    <div class="wrap narrow">
+      <div class="page-head"><h1 data-copy="approach.title"></h1></div>
+      <div class="prose">
+        <h2 data-copy="approach.howTitle"></h2>
+        <p data-copy="approach.howBody"></p>
+        <h2 data-copy="approach.techniquesTitle"></h2>
+      </div>
+      <div class="tech-list" id="tech-list" style="margin-top:12px"></div>
+      <div class="prose" style="margin-top:8px">
+        <h2 data-copy="approach.notTitle"></h2>
+        <p data-copy="disclaimer.full"></p>
+        <h2 data-copy="approach.helpTitle"></h2>
+        <p data-copy="safety.childBody"></p>
+        <p data-copy="safety.parentBody"></p>
+        <h2 data-copy="approach.privacyTitle"></h2>
+        <p data-copy="approach.privacyBody"></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <span data-copy="disclaimer.short"></span>
+    <nav aria-label="Footer"><a href="#approach" data-copy="nav.approach"></a><a href="#pricing" data-copy="nav.pricing"></a></nav>
+  </div>
+</footer>
+
+<div class="modal" id="safety" hidden role="dialog" aria-modal="true" aria-labelledby="safety-title">
+  <div class="card modal-card">
+    <h2 id="safety-title"></h2>
+    <p id="safety-body"></p>
+    <div class="numbers" id="safety-numbers"></div>
+    <button class="btn btn-primary" type="button" id="safety-back" data-copy="safety.back"></button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* Prototype only. In the real app: UI strings live in src/content/copy.ts (C),
+   the engine in src/lib/engine/* (B), data in src/data/*.json. Do not copy this script into the app. */
+const DATA = {"techniques": [{"tag": "name_feeling", "polarity": "positive", "weight": 12, "label": "Named the feeling", "shortTip": "Name what your child feels before you guide.", "why": "When a child hears their feeling named, they feel understood, settle faster, and become able to listen.", "goodExample": "You're really mad that playtime is over.", "betterWith": [], "source": {"name": "Gottman Institute — Emotion Coaching", "url": "https://www.gottman.com"}, "patterns": ["\\b(you|you're|youre|you are|you seem|you look|you feel|sounds like you|looks like you|i can see you)\\b[^.!?]{0,30}\\b(mad|angry|upset|sad|frustrated|disappointed|scared|worried|tired|annoyed|grumpy|jealous|nervous|overwhelmed|hurt)\\b", "\\b(it's|it is|that's|that is|this is|that was|this was|feels|feel)\\s+(so |really |super |very )?(hard|frustrating|frustrated|annoying|disappointing|unfair|scary|tough|itchy|uncomfortable)\\b", "\\byou (really|so|just) (want|wanted|wish)\\b", "\\byou (really |so |just )?(love|loved|miss|don't want|didn't want|do not want)\\b"]}, {"tag": "connect_first", "polarity": "positive", "weight": 8, "label": "Connected first", "shortTip": "Offer closeness before correction.", "why": "Calm closeness tells a child's alarm system they are safe, which makes cooperation possible.", "goodExample": "I'm right here. Come sit with me for a second.", "betterWith": [], "source": {"name": "American Academy of Pediatrics — HealthyChildren.org", "url": "https://www.healthychildren.org"}, "patterns": ["\\b(i'm|i am) (right )?(here|with you|not going anywhere)\\b", "\\b(come here|come sit|let's (hug|cuddle|take a breath|breathe)|can i (hug|hold) you|i love you|you're safe|we'll figure it out|i've got you)\\b"]}, {"tag": "offer_choice", "polarity": "positive", "weight": 8, "label": "Offered a choice", "shortTip": "Give two choices you're happy with.", "why": "A limited choice gives a child some control, so they don't have to fight for it.", "goodExample": "Do you want the blue toothbrush or the green one?", "betterWith": [], "source": {"name": "CDC — Essentials for Parenting Toddlers and Preschoolers", "url": "https://www.cdc.gov"}, "patterns": ["\\b(do you want|would you like|you can choose|you can pick|which one|which do you|you get to choose|you get to pick|want to)\\b[^?]{0,60}\\bor\\b", "\\b\\w+ or (?!else\\b|not\\b)[^.!?]{1,40}\\?"]}, {"tag": "playful", "polarity": "positive", "weight": 8, "label": "Made it playful", "shortTip": "Turn the task into a game.", "why": "Play lowers stress and invites cooperation without a power struggle.", "goodExample": "Can your toothbrush find all the sugar bugs hiding in there?", "betterWith": [], "source": {"name": "PCIT International — PRIDE skills (Parent-Child Interaction Therapy)", "url": "https://www.pcit.org"}, "patterns": ["\\b(let's pretend|pretend|i bet you can't|race you|let's race|can you (roar|hop|jump|stomp|be a)|silly|monster|sugar bugs|magic|tickle)\\b", "\\blike a (lion|rocket|robot|dinosaur|bunny|frog|superhero|race car)\\b"]}, {"tag": "when_then", "polarity": "positive", "weight": 6, "label": "Used when–then", "shortTip": "Link the task to what comes next.", "why": "A when–then sentence makes the routine predictable instead of a battle of wills.", "goodExample": "When your teeth are clean, then we'll read your story.", "betterWith": [], "source": {"name": "CDC — Essentials for Parenting Toddlers and Preschoolers", "url": "https://www.cdc.gov"}, "patterns": ["\\b(when|as soon as|once)\\b[^.!?]{1,60}\\b(then|we can|we'll|you can|you get to)\\b", "\\bfirst\\b[^.!?]{1,60}\\bthen\\b"]}, {"tag": "calm_limit", "polarity": "positive", "weight": 5, "label": "Set a calm limit", "shortTip": "Hold the limit calmly, without threats.", "why": "A calm, clear limit shows the child you're in charge and on their side at the same time.", "goodExample": "I won't let you throw the toothbrush. I'll keep it safe until you're ready.", "betterWith": [], "source": {"name": "AAP Policy Statement: Effective Discipline to Raise Healthy Children (Pediatrics, 2018)", "url": "https://doi.org/10.1542/peds.2018-3112"}, "patterns": ["\\b(i won't let|i'm not going to let|i will not let|i can't let) (you|anyone|him|her|them)\\b", "\\b(it's not okay to|it is not okay to|the rule is|we don't (hit|throw|kick|bite|grab))\\b", "\\b(it's|it is) (time|bedtime) (to|for)\\b"]}, {"tag": "labeled_praise", "polarity": "positive", "weight": 6, "label": "Praised the effort", "shortTip": "Praise exactly what they did right.", "why": "Specific praise tells the child which behavior to repeat and builds connection.", "goodExample": "Thank you for opening your mouth so wide!", "betterWith": [], "source": {"name": "PCIT International — PRIDE skills (Parent-Child Interaction Therapy)", "url": "https://www.pcit.org"}, "patterns": ["\\b(thank you for|thanks for|great job|good job|nice job|way to go|i love (how|that) you|i'm proud of (you|how)|you did it)\\b"]}, {"tag": "threat", "polarity": "negative", "weight": -15, "label": "Threat", "shortTip": "Swap the threat for a choice or a when–then.", "why": "Threats set off a child's alarm system: they dig in harder or comply out of fear, and trust takes a hit.", "goodExample": null, "betterWith": ["offer_choice", "when_then"], "source": {"name": "AAP Policy Statement: Effective Discipline to Raise Healthy Children (Pediatrics, 2018)", "url": "https://doi.org/10.1542/peds.2018-3112"}, "patterns": ["\\b(or else|if you don't|if you do not|you're going to lose|you will lose|i'll take (it|your|away)|i will take|you won't get|you're not getting|you are not getting|straight to bed|time-?out|go to your room|i'm (going to|gonna) (take|leave|call))\\b", "\\bno (ipad|tablet|tv|screens?|story|stories|dessert|toys?|games?|park|playdate|treats?)\\b"]}, {"tag": "yell_or_insult", "polarity": "negative", "weight": -20, "label": "Yelling or name-calling", "shortTip": "Lower your voice; describe the behavior, not the child.", "why": "Harsh words and yelling raise fear and shame, which makes meltdowns longer and more frequent.", "goodExample": null, "betterWith": ["connect_first", "calm_limit"], "source": {"name": "AAP Policy Statement: Effective Discipline to Raise Healthy Children (Pediatrics, 2018)", "url": "https://doi.org/10.1542/peds.2018-3112"}, "patterns": ["\\b(stop being (a|such a) (baby|brat)|you're (being )?(a |such a )?(baby|brat|bad|naughty|annoying|ridiculous|impossible|spoiled)|shut up|stupid|what is wrong with you|you're driving me crazy)\\b"]}, {"tag": "lecture", "polarity": "negative", "weight": -8, "label": "Lecture", "shortTip": "Keep it to one short sentence while they're upset.", "why": "An upset child can't take in long explanations; save the lesson for a calm moment.", "goodExample": null, "betterWith": ["name_feeling", "when_then"], "source": {"name": "American Academy of Pediatrics — HealthyChildren.org", "url": "https://www.healthychildren.org"}, "patterns": ["\\b(how many times|you need to understand|when i was your age|do you know how (much|hard)|you always|you never|we've talked about this|i've told you)\\b"]}, {"tag": "dismiss_feeling", "polarity": "negative", "weight": -10, "label": "Dismissed the feeling", "shortTip": "Accept the feeling, then guide the behavior.", "why": "When a feeling is brushed off, the child usually has to show it louder to be heard.", "goodExample": null, "betterWith": ["name_feeling"], "source": {"name": "Gottman Institute — Emotion Coaching", "url": "https://www.gottman.com"}, "patterns": ["\\b(stop crying|stop whining|it's not a big deal|it's no big deal|you're fine|you are fine|calm down|don't be (sad|mad|upset|silly|a baby)|there's nothing to (cry|be upset) about|get over it|that's enough crying|big kids don't cry)\\b"]}, {"tag": "why_question", "polarity": "negative", "weight": -5, "label": "Asked 'why'", "shortTip": "Guess the feeling instead of asking why.", "why": "Upset young kids can't explain why; the question feels like blame and adds pressure.", "goodExample": null, "betterWith": ["name_feeling"], "source": {"name": "Gottman Institute — Emotion Coaching", "url": "https://www.gottman.com"}, "patterns": ["\\bwhy (are|do|would|did|can't|won't|is it|must) you\\b"]}, {"tag": "bribe", "polarity": "negative", "weight": -3, "label": "Bribe", "shortTip": "Use when–then for routines instead of rewards for stopping.", "why": "Rewarding a child for stopping a meltdown can teach that meltdowns pay off.", "goodExample": null, "betterWith": ["when_then"], "source": {"name": "American Academy of Pediatrics — HealthyChildren.org", "url": "https://www.healthychildren.org"}, "patterns": ["\\b(i'll give you|i'll buy you|i'll get you|you can have (a |some )?(candy|treat|cookie|ice cream|sweets|chocolate|lollipop|toy)|if you stop (crying|screaming|whining)[^.!?]{0,40}(candy|treat|cookie|ice cream|toy|chocolate|screen|ipad|tablet))\\b"]}], "scenarios": [{"id": "teeth-bedtime", "source": "preset", "priority": "P0", "title": "Brushing teeth at bedtime", "childName": "Max", "ageYears": 4, "temperament": "strong-willed", "trigger": "refuses to brush teeth", "setting": "Bathroom, 7:45 pm, already late for bed", "underlyingNeed": "autonomy", "openingLine": "NO! I don't want to brush my teeth!", "planPhrases": [{"phrase": "You really don't want bedtime to start, huh?", "technique": "name_feeling"}, {"phrase": "Top teeth first or bottom teeth first?", "technique": "offer_choice"}, {"phrase": "When teeth are sparkly, then we read your story.", "technique": "when_then"}]}, {"id": "leaving-playground", "source": "preset", "priority": "P0", "title": "Leaving the playground", "childName": "Lily", "ageYears": 3, "temperament": "sensitive", "trigger": "doesn't want to leave the playground", "setting": "Park, 5:30 pm, time to go home for dinner", "underlyingNeed": "transition", "openingLine": "No! I'm not going! I want to SLIDE!", "planPhrases": [{"phrase": "You love the slide so much. It's hard to stop.", "technique": "name_feeling"}, {"phrase": "One more slide or two more swings, then we go?", "technique": "offer_choice"}, {"phrase": "Want to hop to the car like a bunny?", "technique": "playful"}]}, {"id": "getting-dressed", "source": "preset", "priority": "P0", "title": "Getting dressed for daycare", "childName": "Leo", "ageYears": 5, "temperament": "strong-willed", "trigger": "refuses to put on clothes", "setting": "Bedroom, 7:50 am, you need to leave in 10 minutes", "underlyingNeed": "autonomy", "openingLine": "I'm NOT wearing that! It's itchy!", "planPhrases": [{"phrase": "That shirt feels itchy and you hate that feeling.", "technique": "name_feeling"}, {"phrase": "The red shirt or the soft blue one?", "technique": "offer_choice"}, {"phrase": "Let's race: can you get dressed before I count to ten?", "technique": "playful"}]}, {"id": "screen-time-off", "source": "preset", "priority": "P1", "title": "Turning off the tablet", "childName": "Mia", "ageYears": 7, "temperament": "strong-willed", "trigger": "won't stop playing on the tablet", "setting": "Living room, 6 pm, dinner is ready", "underlyingNeed": "transition", "openingLine": "Just one more level! You promised!", "planPhrases": [{"phrase": "It's so hard to stop right in the middle of a level.", "technique": "name_feeling"}, {"phrase": "Do you want to save it now or after this round?", "technique": "offer_choice"}, {"phrase": "When dinner is done, then you can tell me about the level.", "technique": "when_then"}]}, {"id": "sibling-fight", "source": "preset", "priority": "P1", "title": "Fighting over a toy", "childName": "Sam", "ageYears": 6, "temperament": "sensitive", "trigger": "screaming because a sibling took a toy", "setting": "Playroom, Saturday morning", "underlyingNeed": "fairness", "openingLine": "She TOOK it! It's MINE! It's not fair!", "planPhrases": [{"phrase": "You're so upset. That toy really matters to you.", "technique": "name_feeling"}, {"phrase": "I won't let anyone grab. I'll hold it while we figure it out.", "technique": "calm_limit"}, {"phrase": "Do you want to set a timer or trade toys?", "technique": "offer_choice"}]}, {"id": "homework-meltdown", "source": "preset", "priority": "P1", "title": "Homework meltdown", "childName": "Ava", "ageYears": 9, "temperament": "sensitive", "trigger": "refuses to do math homework", "setting": "Kitchen table, 7 pm, worksheet due tomorrow", "underlyingNeed": "competence", "openingLine": "I can't do this! It's too hard! I'm not doing it!", "planPhrases": [{"phrase": "Math feels really frustrating right now.", "technique": "name_feeling"}, {"phrase": "I'm right here. Let's do just the first problem together.", "technique": "connect_first"}, {"phrase": "Want to start with the easiest one or the shortest one?", "technique": "offer_choice"}]}], "childNames": ["Max", "Lily", "Leo", "Mia", "Sam", "Ava", "Noah", "Zoe"], "lines": {"toddler": {"meltdown": ["NOOO!", "No no no!", "Go away!", "I don't WANT to!", "Waaah! NO!"], "upset": ["I don't want to!", "No! Mine!", "You're mean!", "I want it NOW!", "Nooo, not yet!"], "grumpy": ["Hmph. No.", "I don't like it.", "Me do it.", "Not done yet!", "Maybe… no."], "warming": ["Me pick?", "You help me?", "One more?", "Okay… maybe.", "Hold my hand?"], "calm": ["Okay.", "Okay! Me do it!", "I can do it!", "Together?", "Okay. Then story?"]}, "preschool": {"meltdown": ["NO! I don't want to!", "Go away! I'm not doing it!", "I HATE this!", "Nooo! Leave me alone!", "You can't make me!"], "upset": ["But I don't want to!", "It's not fair!", "You're being mean!", "I want to keep playing!", "Why do I have to?"], "grumpy": ["Hmph. I don't like it.", "Only if I can choose.", "But I'm not done yet!", "You do it then.", "Fine… maybe later."], "warming": ["Can I pick which one?", "Will you help me?", "Just one more minute?", "Okay… can you come too?", "Can we do it fast?"], "calm": ["Okay, I'll do it.", "Okay! Let's go!", "I can do it by myself!", "Can we do it together?", "Okay. Then a story?"]}, "school": {"meltdown": ["I HATE this! Leave me alone!", "No! You can't make me!", "It's not FAIR!", "Go away!", "I'm NOT doing it!"], "upset": ["This is so unfair.", "Why do I always have to?", "You never listen to me!", "I don't want to, okay?", "Five more minutes!"], "grumpy": ["Fine. Whatever.", "Can I at least finish this?", "This is boring.", "Only if I get to choose.", "Ugh. Do I have to?"], "warming": ["Okay, but can I do it after?", "Will you sit with me?", "What if I do half now?", "Can I pick which one?", "Okay… how long?"], "calm": ["Okay, I'll do it.", "Fine, let's do it together.", "Okay. Thanks.", "Alright, I'm coming.", "Okay. Can we play after?"]}, "preteen": {"meltdown": ["Leave me ALONE!", "You're ruining everything!", "I'm not talking to you!", "Get out of my room!", "This is SO unfair!"], "upset": ["You don't get it.", "Everyone else gets to!", "Why are you always on my case?", "I said no.", "Can you just stop?"], "grumpy": ["Whatever.", "Fine. If I have to.", "I'll do it later.", "It's not a big deal.", "Ugh, okay, maybe."], "warming": ["Okay… what if I finish this first?", "Can we make a deal?", "Do you actually mean that?", "Okay, but just this once.", "Can I explain?"], "calm": ["Okay. That's fair.", "Okay, I'll do it now.", "Thanks for listening.", "Alright. Deal.", "Okay. Sorry I yelled."]}}};
+
+const copy = {
+  brand: { name: "Meltdown", tagline: "Practice the hard moments before they happen." },
+  nav: { pricing: "Pricing", approach: "Our approach", progress: "Progress", start: "Start practicing" },
+  landing: {
+    kicker: "For parents of kids 2–12",
+    title: "7:45 pm. Toothbrush. Third meltdown this week.",
+    subtitle: "Rehearse the hard moments with your kid in 3 minutes — before they happen. A practice child reacts to your words in real time, then shows you what worked.",
+    cta: "Start practicing — free",
+    ctaNote: "No signup. 3 minutes.",
+    movesTitle: "What moves the calm level",
+    howTitle: "How it works",
+    how: [
+      { title: "Tell us what happened today", body: "Or pick a common moment: bedtime, leaving the park, getting dressed." },
+      { title: "Practice out loud", body: "Talk to a practice child. Watch their calm level rise or fall with every sentence." },
+      { title: "Get tonight's plan", body: "See what worked, what to try instead, and 3 phrases for tonight." },
+    ],
+    trust: "Built on evidence-based approaches: PCIT, CDC parenting guidance, the American Academy of Pediatrics, and emotion coaching.",
+    stat: "48% of parents say most days their stress is completely overwhelming.",
+    statSource: "U.S. Surgeon General's Advisory on Parental Mental Health, 2024",
+  },
+  setup: {
+    title: "What moment do you want to practice?",
+    childTitle: "Your practice child",
+    tabToday: "Today's moment",
+    tabCommon: "Common moments",
+    momentLabel: "What happened?",
+    momentPlaceholder: "e.g., My 4-year-old screamed when I said it was time to brush teeth. I threatened no story and it got worse.",
+    ageLabel: "Child's age",
+    ageOption: (n) => `${n} years`,
+    ageShort: (n) => `Age ${n}`,
+    temperamentLabel: "Temperament",
+    temperaments: { "strong-willed": "Strong-willed", sensitive: "Sensitive", easygoing: "Easygoing" },
+    nameLabel: "Practice name",
+    nameHint: "We use a practice name — no real names needed.",
+    start: "Start rehearsal",
+    starting: "Setting the scene…",
+    tooShort: "Add a few more words about what happened.",
+    offTopic: "Tell us about a moment with your child, or pick a common one.",
+  },
+  rehearsal: {
+    turnOf: (n, max) => `Turn ${n} of ${max}`,
+    startOverlay: "Start rehearsal",
+    inputPlaceholder: "Say what you'd say…",
+    mic: "Tap to talk",
+    micListening: "Listening… tap to stop",
+    micBlocked: "Microphone is blocked. You can type instead.",
+    send: "Send",
+    voice: "Voice",
+    hints: "Coach hints",
+    end: "End & see debrief",
+    calmLevel: (v, label) => `Calm level ${v} · ${label}`,
+    thinking: (name) => `${name} is thinking…`,
+    success: (name, n) => `${name} calmed down in ${n} turns.`,
+    limit: "Time's up. Let's look at what happened.",
+    toDebrief: "See your debrief",
+    backup: "Backup coach",
+    backupHint: "Our AI is unavailable, so a simpler built-in coach is responding.",
+    offline: "Offline demo",
+  },
+  bands: { meltdown: "Meltdown", upset: "Upset", grumpy: "Grumpy", warming: "Warming up", calm: "Calm" },
+  debrief: {
+    howItWent: "How it went",
+    chartTitle: "Calm level over time",
+    worked: "What worked",
+    workedEmpty: "Nothing landed yet — that's what practice is for.",
+    tryInstead: "What to try instead",
+    instead: "Instead of",
+    try: "Try",
+    plan: "Tonight's plan",
+    copy: "Copy plan",
+    copied: "Copied!",
+    save: "Save plan",
+    saved: "Saved",
+    again: "Practice again",
+    harder: "Harder version",
+    newMoment: "New moment",
+    source: "Source",
+    statTurns: "Turns",
+    statStart: "Start",
+    statEnd: "End",
+    outcomes: { calm_reached: "Calmed down", turn_limit: "Turn limit reached", ended_by_parent: "Ended early" },
+  },
+  pricing: {
+    title: "Practice daily. Pay only if it helps.",
+    trial: "30 days free. Then $9.99/month or $79/year. One plan covers both parents. Cancel anytime.",
+    monthly: { name: "Monthly", price: "$9.99", per: "/month", cta: "Start free trial" },
+    yearly: { name: "Yearly", price: "$79", per: "/year", badge: "Save 34%", cta: "Start free trial" },
+    includesTitle: "Every plan includes",
+    includes: ["Unlimited rehearsals for any moment", "Visual debrief and tonight's plan", "Progress and streaks", "Both parents on one plan"],
+    testNote: "Demo checkout runs in Stripe test mode — no real charge. Test card 4242 4242 4242 4242.",
+    trialDay: (n) => `Day ${n} of 30 of your free trial`,
+    waitlistThanks: "Thanks! We'll let you know.",
+  },
+  approach: {
+    title: "Our approach",
+    howTitle: "How Meltdown works",
+    howBody: "Every sentence you say is matched to well-known parenting techniques. Helpful ones raise the practice child's calm level, harmful ones lower it. The math is simple and the same every time, so you can see exactly what moved the needle.",
+    techniquesTitle: "The techniques",
+    notTitle: "What Meltdown is not",
+    helpTitle: "If you need help now",
+    privacyTitle: "Privacy",
+    privacyBody: "Your practice stays on your device. To create the child's replies and your debrief, what you type is sent to our AI provider (Anthropic) and isn't stored on our servers.",
+  },
+  disclaimer: {
+    short: "Meltdown is a practice tool for parents, not therapy or medical advice.",
+    full: "Meltdown is a practice tool for parents. It is not therapy, medical advice, or a diagnosis, and it doesn't replace a pediatrician or a licensed professional. If you're worried about your child's development, behavior, or safety, talk to your pediatrician. In an emergency, call 911.",
+  },
+  safety: {
+    childTitle: "Let's pause for a moment",
+    childBody: "It sounds like someone might be getting hurt. If anyone is in immediate danger, call 911. For support, the Childhelp National Child Abuse Hotline is available 24/7 — call or text 1-800-422-4453. Asking for help is a strong step.",
+    parentTitle: "You matter too",
+    parentBody: "It sounds like you're carrying a lot right now. If you're thinking about hurting yourself, please call or text 988 (Suicide & Crisis Lifeline) — free and available 24/7. If you're in immediate danger, call 911.",
+    call911: "Call 911",
+    callChildhelp: "Call Childhelp",
+    call988: "Call or text 988",
+    back: "Back to practice",
+  },
+};
+
+/* ---------- constants (SPEC 7.2) ---------- */
+const MAX_TURNS = 8, CALM_THRESHOLD = 80, NO_TAG_DELTA = -2, MAX_UP = 15, MAX_DOWN = -25;
+const START_MOOD = { "strong-willed": 30, sensitive: 35, easygoing: 45 };
+const BANDS = ["meltdown", "upset", "grumpy", "warming", "calm"];
+const MOOD_COLOR = { meltdown: "#E5484D", upset: "#F76B15", grumpy: "#F5A524", warming: "#4C9AFF", calm: "#30A46C" };
+const TECH = Object.fromEntries(DATA.techniques.map((t) => [t.tag, t]));
+const PRESETS = DATA.scenarios.filter((s) => s.priority === "P0");
+
+/* ---------- helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const signed = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0");
+function getCopy(path) { return path.split(".").reduce((o, k) => (o == null ? o : o[k]), copy); }
+function store(key, val) { try { localStorage.setItem("meltdown-proto:" + key, JSON.stringify(val)); } catch (e) {} }
+function load(key) { try { const v = localStorage.getItem("meltdown-proto:" + key); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
+function uuid() { try { return crypto.randomUUID(); } catch (e) { return "id-" + Date.now() + "-" + Math.floor(Math.random() * 1e6); } }
+
+/* ---------- engine (SPEC 7.3, 8, 9.5, 9.6; prototype copy) ---------- */
+function bandOf(m) { if (m <= 20) return "meltdown"; if (m <= 40) return "upset"; if (m <= 60) return "grumpy"; if (m <= 79) return "warming"; return "calm"; }
+function ageGroupOf(a) { return a <= 3 ? "toddler" : a <= 5 ? "preschool" : a <= 8 ? "school" : "preteen"; }
+function normalizeText(s) { return s.replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, " ").trim(); }
+function isShouting(t) {
+  const words = t.split(/\s+/).filter(Boolean);
+  const letters = t.replace(/[^A-Za-z]/g, "");
+  if (words.length < 3 || letters.length < 8) return false;
+  return letters.replace(/[^A-Z]/g, "").length / letters.length >= 0.7;
+}
+function heuristicTags(text) {
+  const hits = [];
+  for (const t of DATA.techniques) {
+    for (const p of t.patterns) {
+      const m = new RegExp(p, "i").exec(text);
+      if (m) { hits.push({ tag: t.tag, evidence: m[0] }); break; }
+    }
+  }
+  if (isShouting(text) && !hits.some((h) => h.tag === "yell_or_insult")) hits.push({ tag: "yell_or_insult", evidence: text });
+  if (text.split(/\s+/).length > 45 && !hits.some((h) => h.tag === "lecture")) hits.push({ tag: "lecture", evidence: text.slice(0, 40) });
+  return hits.slice(0, 4);
+}
+function applyTurn({ moodBefore, tags, prevTags, difficulty }) {
+  const seen = new Set();
+  const uniq = tags.filter((h) => (seen.has(h.tag) ? false : (seen.add(h.tag), true)));
+  const applied = uniq.map((h) => {
+    const w = TECH[h.tag].weight;
+    let a = w;
+    if (w > 0) {
+      let m = 1;
+      if (prevTags.includes(h.tag)) m *= 0.5;
+      if (moodBefore < 30) m *= 0.5;
+      if (difficulty === "hard") m *= 0.8;
+      a = Math.round(w * m);
+    }
+    return { ...h, weight: w, applied: a };
+  });
+  const rawDelta = applied.length === 0 ? NO_TAG_DELTA : clamp(applied.reduce((s, t) => s + t.applied, 0), MAX_DOWN, MAX_UP);
+  const moodAfter = clamp(moodBefore + rawDelta, 0, 100);
+  return { tags: applied, moodAfter, delta: moodAfter - moodBefore };
+}
+const SAFETY = {
+  parent_crisis: [/\b(kill|hurt|harm)\s+myself\b/i, /\bsuicid(e|al)\b/i, /\bwant to die\b/i, /\bend (it all|my life)\b/i],
+  child_at_risk: [
+    /\b(hit|hitting|beat|beating|punch(ed)?|slap(ped)?|choke(d)?|shake|shaking|shook|smack(ed)?)\s+(him|her|them|my (son|daughter|kid|child|baby|toddler))\b/i,
+    /\b(hurt|kill)\s+(him|her|them|my (son|daughter|kid|child|baby))\b/i,
+    /\b(not breathing|choking|unconscious|seizure|overdose|swallowed (pills|medicine|bleach|a battery))\b/i,
+  ],
+};
+function detectSafety(text) {
+  if (SAFETY.parent_crisis.some((r) => r.test(text))) return "parent_crisis";
+  if (SAFETY.child_at_risk.some((r) => r.test(text))) return "child_at_risk";
+  return "none";
+}
+function seedOf(text, i) { let s = i; for (const ch of text) s += ch.charCodeAt(0); return s; }
+function lineFor(ageGroup, bandIdx, seed) { const arr = DATA.lines[ageGroup][BANDS[clamp(bandIdx, 0, 4)]]; return arr[seed % arr.length]; }
+
+function runTurn(session, rawText) {
+  const text = normalizeText(rawText);
+  const i = session.turns.length;
+  const prevTags = i > 0 ? session.turns[i - 1].tags.map((t) => t.tag) : [];
+  const moodBefore = session.mood;
+  const r = applyTurn({ moodBefore, tags: heuristicTags(text), prevTags, difficulty: session.difficulty });
+  const ag = session.scenario.ageGroup;
+  const seed = seedOf(text, i);
+  const b0 = BANDS.indexOf(bandOf(moodBefore)), b1 = BANDS.indexOf(bandOf(r.moodAfter));
+  const childReply = lineFor(ag, b1 > b0 ? b0 + 1 : b1 < b0 ? b0 - 1 : b0, seed);
+  const turn = { index: i, parentText: text, tags: r.tags, moodBefore, moodAfter: r.moodAfter, delta: r.delta, childReply, source: "fallback" };
+  const outcome = r.moodAfter >= CALM_THRESHOLD ? "calm_reached" : i + 1 >= MAX_TURNS ? "turn_limit" : "continue";
+  return { turn, band: bandOf(r.moodAfter), outcome, safety: detectSafety(text) };
+}
+
+const KEYWORDS = [
+  [/teeth|brush/i, "teeth-bedtime"], [/park|playground|slide|leave/i, "leaving-playground"],
+  [/dress|clothes|shoes|shirt|socks/i, "getting-dressed"], [/tablet|ipad|screen|tv|game/i, "screen-time-off"],
+  [/brother|sister|sibling|share|toy/i, "sibling-fight"], [/homework|math|reading|worksheet/i, "homework-meltdown"],
+];
+function scenarioFromText(text, child) {
+  const ag = ageGroupOf(child.ageYears);
+  const hit = KEYWORDS.find(([re]) => re.test(text));
+  const base = hit ? DATA.scenarios.find((s) => s.id === hit[1]) : null;
+  if (base) return { ...base, id: "custom-" + uuid(), source: "custom", childName: child.childName, ageYears: child.ageYears, ageGroup: ag, temperament: child.temperament };
+  return { id: "custom-" + uuid(), source: "custom", title: "A hard moment", childName: child.childName, ageYears: child.ageYears, ageGroup: ag, temperament: child.temperament,
+    trigger: text.slice(0, 60), setting: "At home", underlyingNeed: "autonomy", openingLine: DATA.lines[ag].upset[0] };
+}
+function newSession(scenario) {
+  const startMood = START_MOOD[scenario.temperament];
+  return { version: 1, id: uuid(), createdAt: new Date().toISOString(), scenario, difficulty: "normal", startMood, mood: startMood, turns: [], status: "active", outcome: "continue" };
+}
+function presetScenario(p) {
+  const t = state.touched, c = state.child;
+  const age = t.age ? c.ageYears : p.ageYears;
+  return { ...p, childName: t.name ? c.childName : p.childName, ageYears: age, ageGroup: ageGroupOf(age), temperament: t.temp ? c.temperament : p.temperament };
+}
+
+function buildDebrief(s) {
+  const turns = s.turns;
+  const moods = [s.startMood, ...turns.map((t) => t.moodAfter)];
+  const stats = { turns: turns.length, startMood: s.startMood, endMood: moods[moods.length - 1], peakMood: Math.max(...moods), lowMood: Math.min(...moods), outcome: s.outcome };
+  const sums = {};
+  turns.forEach((t) => t.tags.forEach((g) => { if (g.weight > 0) sums[g.tag] = (sums[g.tag] || 0) + g.applied; }));
+  const worked = Object.entries(sums).sort((a, b) => b[1] - a[1]);
+  const name = s.scenario.childName;
+  let summary;
+  if (s.outcome === "calm_reached") summary = `${name} calmed down in ${turns.length} turns. ${TECH[worked[0][0]].label} made the biggest difference.`;
+  else {
+    const missing = ["name_feeling", "offer_choice", "when_then", "connect_first"].find((t) => !sums[t]) || "name_feeling";
+    summary = `You stayed with it for ${turns.length} turns. Next time, try this: ${TECH[missing].shortTip}`;
+  }
+  const plan = s.scenario.planPhrases || ["name_feeling", "offer_choice", "when_then"].map((t) => ({ phrase: TECH[t].goodExample, technique: t }));
+  const candidates = turns.filter((t) => t.delta <= 0 || !t.tags.some((g) => g.weight > 0)).sort((a, b) => a.delta - b.delta).slice(0, 3).sort((a, b) => a.index - b.index);
+  const rewrites = candidates.map((t) => {
+    const neg = t.tags.find((g) => g.weight < 0);
+    const options = neg ? TECH[neg.tag].betterWith : ["name_feeling"];
+    const fromPlan = plan.find((p) => options.includes(p.technique));
+    const technique = fromPlan ? fromPlan.technique : options[0];
+    return { turnIndex: t.index, original: t.parentText, improved: fromPlan ? fromPlan.phrase : TECH[technique].goodExample, technique };
+  });
+  return { summary, rewrites, tonightPlan: plan.slice(0, 3), stats, worked, source: "fallback" };
+}
+
+/* ---------- state ---------- */
+const savedChild = load("child");
+const state = {
+  child: savedChild || { childName: "Max", ageYears: 4, temperament: "strong-willed" },
+  touched: { name: false, age: false, temp: false },
+  prefs: load("prefs") || { coachHints: true, voiceOn: true },
+  tab: "today",
+  session: null,
+  started: false,
+  pending: false,
+  trialStarted: load("trial") || null,
+};
+
+/* ---------- avatar (SPEC 13.3) ---------- */
+const BROWS = {
+  calm: ["M68 88 Q78 83 88 88", "M112 88 Q122 83 132 88"],
+  warming: ["M68 88 L88 87", "M112 87 L132 88"],
+  grumpy: ["M68 86 L88 90", "M112 90 L132 86"],
+  upset: ["M68 90 L88 84", "M112 84 L132 90"],
+  meltdown: ["M66 92 L88 82", "M112 82 L134 92"],
+};
+const MOUTH = { calm: "M80 135 Q100 152 120 135", warming: "M84 138 Q100 144 116 138", grumpy: "M84 142 Q100 138 116 142", upset: "M82 146 Q100 132 118 146" };
+function avatarSVG(band, { thinking = false, size = 220 } = {}) {
+  const dx = thinking ? 3 : 0, dy = thinking ? -4 : 0;
+  const eyes = band === "meltdown"
+    ? `<path d="M70 105 Q78 99 86 105" stroke="#1B2140" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M114 105 Q122 99 130 105" stroke="#1B2140" stroke-width="3" fill="none" stroke-linecap="round"/>`
+    : `<ellipse cx="${78 + dx}" cy="${105 + dy}" rx="7" ry="9" fill="#1B2140"/><ellipse cx="${122 + dx}" cy="${105 + dy}" rx="7" ry="9" fill="#1B2140"/>`;
+  const blush = band === "calm" || band === "warming" ? `<circle cx="66" cy="128" r="8" fill="#FF9AA2" opacity="0.45"/><circle cx="134" cy="128" r="8" fill="#FF9AA2" opacity="0.45"/>` : "";
+  const drop = (x) => `M${x} 116 Q${x - 3} 124 ${x} 128 Q${x + 3} 124 ${x} 116 Z`;
+  const tears = band === "upset" ? `<path d="${drop(76)}" fill="#6EC1FF"/><path d="${drop(122)}" fill="#6EC1FF"/>`
+    : band === "meltdown" ? `<path class="tear-fall" d="${drop(76)}" fill="#6EC1FF"/><path class="tear-fall r" d="${drop(122)}" fill="#6EC1FF"/>` : "";
+  const [bl, br] = BROWS[band];
+  const mouth = band === "meltdown" ? `<ellipse cx="100" cy="142" rx="16" ry="12" fill="#7A2E2E"/>` : `<path d="${MOUTH[band]}" stroke="#7A2E2E" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  const bubble = thinking ? `<g aria-hidden="true"><circle cx="150" cy="60" r="4" fill="#FFFFFF" stroke="#E3E7EF" stroke-width="2"/><ellipse cx="170" cy="36" rx="26" ry="17" fill="#FFFFFF" stroke="#E3E7EF" stroke-width="2"/><circle class="think-dot" cx="160" cy="36" r="3.5" fill="#5B6478"/><circle class="think-dot d2" cx="170" cy="36" r="3.5" fill="#5B6478"/><circle class="think-dot d3" cx="180" cy="36" r="3.5" fill="#5B6478"/></g>` : "";
+  return `<svg viewBox="0 0 200 200" width="${size}" height="${size}" aria-hidden="true">
+    <circle class="halo" cx="100" cy="100" r="96" fill="${MOOD_COLOR[band]}" opacity="0.15"/>
+    <g class="face-g">
+      <circle cx="38" cy="110" r="10" fill="#FFD7B0"/><circle cx="162" cy="110" r="10" fill="#FFD7B0"/>
+      <circle cx="100" cy="108" r="62" fill="#FFD7B0" stroke="#E8B98E" stroke-width="2"/>
+      <path d="M40 95 Q45 35 100 32 Q155 35 160 95 Q150 60 100 58 Q50 60 40 95 Z" fill="#5A3E2B"/>
+      <path d="${bl}" stroke="#5A3E2B" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="${br}" stroke="#5A3E2B" stroke-width="4" fill="none" stroke-linecap="round"/>
+      ${eyes}${blush}${tears}
+      <g class="mouth">${mouth}</g>
+    </g>${bubble}</svg>`;
+}
+function renderAvatar(el, band, opts = {}) {
+  const name = opts.name || "";
+  el.innerHTML = avatarSVG(band, opts);
+  el.setAttribute("role", "img");
+  el.setAttribute("aria-label", `${name ? name + ", " : ""}${copy.bands[band]}`);
+}
+
+/* ---------- mood meter ---------- */
+function renderMeter(el, value) {
+  const zones = [["meltdown", 20.5], ["upset", 20], ["grumpy", 20], ["warming", 19], ["calm", 20.5]];
+  el.innerHTML = `<div class="meter-track" aria-hidden="true">${zones.map(([b, w]) => `<span class="z" style="flex:${w};background:${MOOD_COLOR[b]}"></span>`).join("")}<span class="meter-marker" style="left:${value}%"></span></div>
+    <div class="meter-label"><span class="ml-text">${esc(copy.rehearsal.calmLevel(value, copy.bands[bandOf(value)]))}</span><span class="delta-chip"></span></div>`;
+}
+function updateMeter(el, value, delta) {
+  if (!el.querySelector(".meter-track")) renderMeter(el, value);
+  el.querySelector(".meter-marker").style.left = value + "%";
+  el.querySelector(".ml-text").textContent = copy.rehearsal.calmLevel(value, copy.bands[bandOf(value)]);
+  const chip = el.querySelector(".delta-chip");
+  if (delta === null || delta === undefined) { chip.className = "delta-chip"; chip.textContent = ""; return; }
+  chip.textContent = signed(delta);
+  chip.className = "delta-chip show " + (delta > 0 ? "up" : delta < 0 ? "down" : "flat");
+  clearTimeout(chip._t);
+  chip._t = setTimeout(() => chip.classList.remove("show"), 1500);
+}
+function tagChip(tag, applied) {
+  const t = TECH[tag];
+  return `<span class="tag-chip ${t.weight > 0 ? "pos" : "neg"}"><span class="dot" aria-hidden="true"></span>${esc(t.label)} ${signed(applied)}</span>`;
+}
+
+/* ---------- static copy ---------- */
+function fillCopy() {
+  document.querySelectorAll("[data-copy]").forEach((el) => { const v = getCopy(el.dataset.copy); if (typeof v === "string") el.textContent = v; });
+  document.querySelectorAll("[data-copy-inline]").forEach((el) => { el.textContent = getCopy(el.dataset.copyInline); });
+  $("how-steps").innerHTML = copy.landing.how.map((s, i) => `<div class="card step"><span class="step-n">${i + 1}</span><h3>${esc(s.title)}</h3><p>${esc(s.body)}</p></div>`).join("");
+  $("includes").innerHTML = copy.pricing.includes.map((s) => `<li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg><span>${esc(s)}</span></li>`).join("");
+  $("f-moment").placeholder = copy.setup.momentPlaceholder;
+  $("r-text").placeholder = copy.rehearsal.inputPlaceholder;
+  $("r-mic").setAttribute("aria-label", copy.rehearsal.mic);
+  $("r-mic").title = copy.rehearsal.mic;
+  $("r-backup").textContent = copy.rehearsal.backup;
+  $("r-backup").title = copy.rehearsal.backupHint;
+  // landing preview
+  renderAvatar($("hero-avatar"), "upset", { size: 116, name: "Max" });
+  renderMeter($("hero-meter"), 30);
+  $("hero-chips").innerHTML = [["name_feeling", 12], ["offer_choice", 8], ["when_then", 6], ["threat", -15], ["yell_or_insult", -20]].map(([t, a]) => tagChip(t, a)).join("");
+  // approach
+  $("tech-list").innerHTML = DATA.techniques.map((t) => `<div class="card tech-row"><div class="t-head"><h3>${esc(t.label)}</h3>${tagChipWeight(t)}</div><p>${esc(t.why)}</p><a class="src" href="${esc(t.source.url)}" target="_blank" rel="noopener noreferrer" style="font-size:13px">${esc(copy.debrief.source)}: ${esc(t.source.name)}</a></div>`).join("");
+}
+function tagChipWeight(t) { return `<span class="tag-chip ${t.weight > 0 ? "pos" : "neg"}">${signed(t.weight)}</span>`; }
+
+/* ---------- setup ---------- */
+function renderSetup() {
+  const c = state.child;
+  $("f-age").innerHTML = Array.from({ length: 11 }, (_, i) => i + 2).map((n) => `<option value="${n}"${n === c.ageYears ? " selected" : ""}>${copy.setup.ageOption(n)}</option>`).join("");
+  $("f-name").innerHTML = DATA.childNames.map((n) => `<option${n === c.childName ? " selected" : ""}>${esc(n)}</option>`).join("");
+  $("f-temp").innerHTML = Object.entries(copy.setup.temperaments).map(([k, v]) => `<button type="button" data-temp="${k}" aria-pressed="${k === c.temperament}">${esc(v)}</button>`).join("");
+  $("presets").innerHTML = PRESETS.map((p) => {
+    const s = presetScenario(p);
+    return `<button class="card preset" type="button" data-preset="${p.id}">
+      <div class="preset-top"><div class="avatar" data-mini="${p.id}"></div><div><h3>${esc(p.title)}</h3><p class="meta">${esc(s.childName)} · ${esc(copy.setup.ageShort(s.ageYears))} · ${esc(copy.setup.temperaments[s.temperament])}</p></div></div>
+      <p class="setting">${esc(p.setting)}</p>
+      <p class="opening">“${esc(p.openingLine)}”</p></button>`;
+  }).join("");
+  document.querySelectorAll("[data-mini]").forEach((el) => renderAvatar(el, "upset", { size: 56 }));
+  setTab(state.tab);
+}
+function setTab(tab) {
+  state.tab = tab;
+  $("tab-today").setAttribute("aria-selected", String(tab === "today"));
+  $("tab-common").setAttribute("aria-selected", String(tab === "common"));
+  $("panel-today").hidden = tab !== "today";
+  $("panel-common").hidden = tab !== "common";
+}
+function saveChild() { store("child", state.child); }
+function startSession(scenario) {
+  state.session = newSession(scenario);
+  state.started = false;
+  if (!state.trialStarted) { state.trialStarted = new Date().toISOString(); store("trial", state.trialStarted); }
+  location.hash = "rehearsal";
+}
+
+/* ---------- rehearsal ---------- */
+let speaking = false;
+function stageBand() { return bandOf(state.session.mood); }
+function renderStage(opts = {}) {
+  const s = state.session;
+  const el = $("r-avatar");
+  renderAvatar(el, stageBand(), { thinking: state.pending, size: window.matchMedia("(max-width: 899px)").matches ? 140 : 220, name: s.scenario.childName });
+  el.classList.toggle("speaking", speaking);
+  if (opts.pop) { el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+}
+function transcriptHTML() {
+  const s = state.session;
+  const hints = state.prefs.coachHints;
+  let html = `<div class="msg child"><div class="bubble">${esc(s.scenario.openingLine)}</div></div>`;
+  s.turns.forEach((t) => {
+    html += `<div class="msg parent"><div class="bubble">${esc(t.parentText)}</div>${hints && t.tags.length ? `<div class="chips">${t.tags.map((g) => tagChip(g.tag, g.applied)).join("")}</div>` : ""}</div>`;
+    html += `<div class="msg child"><div class="bubble">${esc(t.childReply)}</div></div>`;
+  });
+  if (state.pendingText) html += `<div class="msg parent"><div class="bubble">${esc(state.pendingText)}</div></div><div class="msg child"><div class="bubble typing" aria-label="${esc(copy.rehearsal.thinking(s.scenario.childName))}"><i></i><i></i><i></i></div></div>`;
+  return html;
+}
+function renderRehearsal() {
+  const s = state.session;
+  $("r-title").textContent = s.scenario.title;
+  $("r-setting").textContent = `${s.scenario.childName}, ${s.scenario.ageYears} · ${s.scenario.setting}`;
+  $("r-name").textContent = s.scenario.childName;
+  $("r-turn").textContent = copy.rehearsal.turnOf(Math.min(s.turns.length + (s.status === "active" ? 1 : 0), MAX_TURNS), MAX_TURNS);
+  $("sw-voice").setAttribute("aria-checked", String(state.prefs.voiceOn));
+  $("sw-hints").setAttribute("aria-checked", String(state.prefs.coachHints));
+  renderStage();
+  renderMeter($("r-meter"), s.mood);
+  $("r-backup").hidden = s.turns.length === 0;
+  $("r-transcript").innerHTML = transcriptHTML();
+  renderEnd();
+  $("r-overlay").hidden = state.started || s.status === "ended";
+  if (!$("r-overlay").hidden) {
+    renderAvatar($("ov-avatar"), bandOf(s.mood), { size: 120, name: s.scenario.childName });
+    $("ov-title").textContent = s.scenario.title;
+    $("ov-setting").textContent = s.scenario.setting;
+  }
+  updateCount();
+}
+function renderEnd() {
+  const s = state.session, box = $("r-endbanner");
+  const ended = s.status === "ended" || s.outcome !== "continue";
+  $("r-input-wrap").hidden = ended;
+  box.hidden = !ended;
+  if (!ended) return;
+  const ok = s.outcome === "calm_reached";
+  box.innerHTML = `<div class="card endbanner ${ok ? "success" : ""}"><p class="eb-title">${esc(ok ? copy.rehearsal.success(s.scenario.childName, s.turns.length) : copy.rehearsal.limit)}</p><button class="btn btn-primary" type="button" id="eb-go">${esc(copy.rehearsal.toDebrief)}</button></div>`;
+  $("eb-go").onclick = () => { finishSession(s.outcome); location.hash = "debrief"; };
+}
+function finishSession(outcome) { const s = state.session; s.status = "ended"; s.outcome = outcome; s.debrief = null; }
+function scrollChatToEnd() { const last = $("r-transcript").lastElementChild; if (last) last.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+function appendLastMessages(n) { const kids = $("r-transcript").children; for (let i = Math.max(0, kids.length - n); i < kids.length; i++) kids[i].classList.add("enter"); }
+
+function sendTurn(raw) {
+  const s = state.session;
+  const text = raw.trim();
+  if (!text || state.pending || s.status !== "active" || s.outcome !== "continue") return;
+  state.pending = true;
+  state.pendingText = normalizeText(text);
+  $("r-text").value = ""; autoGrow(); updateCount();
+  $("r-send").disabled = true; $("r-text").disabled = true;
+  $("r-transcript").innerHTML = transcriptHTML(); appendLastMessages(2); renderStage(); scrollChatToEnd();
+  const thinkTimer = setTimeout(() => { $("r-think-note").textContent = copy.rehearsal.thinking(s.scenario.childName); }, 6000);
+  setTimeout(() => {
+    clearTimeout(thinkTimer); $("r-think-note").textContent = "";
+    const res = runTurn(s, state.pendingText);
+    s.turns.push(res.turn); s.mood = res.turn.moodAfter; s.outcome = res.outcome;
+    if (res.outcome !== "continue") s.status = "ended";
+    state.pending = false; state.pendingText = null;
+    $("r-send").disabled = false; $("r-text").disabled = false;
+    $("r-transcript").innerHTML = transcriptHTML(); appendLastMessages(2);
+    $("r-turn").textContent = copy.rehearsal.turnOf(Math.min(s.turns.length + (s.status === "active" ? 1 : 0), MAX_TURNS), MAX_TURNS);
+    $("r-backup").hidden = false;
+    renderStage({ pop: true });
+    updateMeter($("r-meter"), s.mood, res.turn.delta);
+    renderEnd();
+    scrollChatToEnd();
+    say(res.turn.childReply);
+    if (res.safety !== "none") showSafety(res.safety);
+    if (s.status === "active") $("r-text").focus({ preventScroll: true });
+  }, 900);
+}
+
+/* ---------- voice (SPEC 12) ---------- */
+let voice = null;
+function pickVoice() {
+  try {
+    const vs = speechSynthesis.getVoices();
+    voice = ["Google US English", "Samantha", "Microsoft Aria Online (Natural) - English (United States)"].map((n) => vs.find((v) => v.name === n)).find(Boolean) || vs.find((v) => v.lang === "en-US") || null;
+  } catch (e) { voice = null; }
+}
+try { pickVoice(); speechSynthesis.addEventListener("voiceschanged", pickVoice); } catch (e) {}
+function say(text) {
+  if (!state.prefs.voiceOn || !state.started) return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    if (voice) u.voice = voice;
+    u.lang = "en-US"; u.pitch = 1.6; u.rate = 1.05; u.volume = 1;
+    u.onstart = () => { speaking = true; $("r-avatar").classList.add("speaking"); };
+    u.onend = u.onerror = () => { speaking = false; $("r-avatar").classList.remove("speaking"); };
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
+let rec = null;
+function toggleMic() {
+  const note = $("r-mic-note"), btn = $("r-mic");
+  if (rec) { rec.stop(); return; }
+  const Ctor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!Ctor) { note.textContent = copy.rehearsal.micBlocked; return; }
+  try {
+    rec = new Ctor();
+    rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    const before = $("r-text").value;
+    rec.onresult = (e) => { let t = ""; for (const r of e.results) t += r[0].transcript; $("r-text").value = (before ? before + " " : "") + t; autoGrow(); updateCount(); };
+    rec.onerror = (e) => { if (e.error === "not-allowed" || e.error === "service-not-allowed") note.textContent = copy.rehearsal.micBlocked; };
+    rec.onend = () => { rec = null; btn.classList.remove("listening"); btn.setAttribute("aria-label", copy.rehearsal.mic); if (note.textContent === copy.rehearsal.micListening) note.textContent = ""; };
+    rec.start();
+    btn.classList.add("listening"); btn.setAttribute("aria-label", copy.rehearsal.micListening); note.textContent = copy.rehearsal.micListening;
+  } catch (e) { rec = null; note.textContent = copy.rehearsal.micBlocked; }
+}
+
+function autoGrow() { const t = $("r-text"); t.style.height = "auto"; t.style.height = Math.min(t.scrollHeight, 140) + "px"; }
+function updateCount() { const n = $("r-text").value.length; $("r-count").textContent = n >= 300 ? `${n}/400` : ""; }
+
+/* ---------- safety ---------- */
+function showSafety(kind) {
+  const child = kind === "child_at_risk";
+  $("safety-title").textContent = child ? copy.safety.childTitle : copy.safety.parentTitle;
+  $("safety-body").textContent = child ? copy.safety.childBody : copy.safety.parentBody;
+  const nums = child ? [[copy.safety.call911, "911", "tel:911"], [copy.safety.callChildhelp, "1-800-422-4453", "tel:18004224453"]] : [[copy.safety.call988, "988", "tel:988"]];
+  $("safety-numbers").innerHTML = nums.map(([l, n, h]) => `<a href="${h}">${esc(l)}<span>${esc(n)}</span></a>`).join("");
+  $("safety").hidden = false;
+  $("safety-back").focus();
+}
+
+/* ---------- debrief ---------- */
+function moodChart(points, width) {
+  const W = Math.round(clamp(width || 600, 300, 600)), H = 240, L = 40, R = 16, T = 16, B = 28;
+  const iw = W - L - R, ih = H - T - B;
+  const n = Math.max(points.length - 1, 1);
+  const x = (i) => L + (i / n) * iw;
+  const y = (v) => T + (1 - v / 100) * ih;
+  const bands = [[0, 20.5, "meltdown"], [20.5, 40.5, "upset"], [40.5, 60.5, "grumpy"], [60.5, 79.5, "warming"], [79.5, 100, "calm"]];
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(copy.debrief.chartTitle)}">`;
+  bands.forEach(([a, b, k]) => { s += `<rect x="${L}" y="${y(b)}" width="${iw}" height="${y(a) - y(b)}" fill="${MOOD_COLOR[k]}" opacity="0.08"/>`; });
+  [0, 20, 40, 60, 80, 100].forEach((v) => { s += `<text x="${L - 8}" y="${y(v) + 4}" text-anchor="end" font-size="12" fill="#5B6478" font-family="Inter, sans-serif">${v}</text>`; });
+  s += `<line x1="${L}" x2="${W - R}" y1="${y(80)}" y2="${y(80)}" stroke="#30A46C" stroke-width="1.5" stroke-dasharray="5 5"/>`;
+  s += `<text x="${L + 6}" y="${y(80) - 6}" text-anchor="start" font-size="12" font-weight="600" fill="#17704A" font-family="Inter, sans-serif">${esc(copy.bands.calm)}</text>`;
+  points.forEach((p, i) => { s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="12" fill="#5B6478" font-family="Inter, sans-serif">${i === 0 ? copy.debrief.statStart : i}</text>`; });
+  s += `<polyline points="${points.map((p, i) => `${x(i)},${y(p.mood)}`).join(" ")}" fill="none" stroke="#1B2140" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  points.forEach((p, i) => {
+    s += `<g><title>${esc(p.text || copy.debrief.statStart)}</title><circle cx="${x(i)}" cy="${y(p.mood)}" r="5" fill="${MOOD_COLOR[bandOf(p.mood)]}" stroke="#FFFFFF" stroke-width="2"/></g>`;
+    if (i > 0 && p.delta !== undefined) {
+      const up = p.delta >= 0;
+      const ly = clamp(y(p.mood) + (up ? -12 : 20), T + 10, H - B - 4);
+      s += `<text x="${x(i)}" y="${ly}" text-anchor="middle" font-size="12" font-weight="700" fill="${p.delta > 0 ? "#17704A" : p.delta < 0 ? "#B3282E" : "#5B6478"}" font-family="Inter, sans-serif">${signed(p.delta)}</text>`;
+    }
+  });
+  return s + `</svg>`;
+}
+function techniqueCard(tag, total) {
+  const t = TECH[tag];
+  return `<div class="tcard"><div class="t-head"><h3>${esc(t.label)}</h3><span class="tag-chip pos">${signed(total)}</span></div><p>${esc(t.why)}</p><a class="src" href="${esc(t.source.url)}" target="_blank" rel="noopener noreferrer">${esc(copy.debrief.source)}: ${esc(t.source.name)}</a></div>`;
+}
+function rewriteCard(r) {
+  const t = TECH[r.technique];
+  return `<div class="rewrite"><p class="was"><span class="lbl">${esc(copy.debrief.instead)}</span><s>${esc(r.original)}</s></p>
+    <p class="better"><span class="lbl try">${esc(copy.debrief.try)}</span>${esc(r.improved)}</p>
+    <div><span class="tag-chip pos">${esc(t.label)}</span></div><p class="muted" style="font-size:15px">${esc(t.why)}</p>
+    <a class="src" style="font-size:13px" href="${esc(t.source.url)}" target="_blank" rel="noopener noreferrer">${esc(copy.debrief.source)}: ${esc(t.source.name)}</a></div>`;
+}
+function renderDebrief() {
+  const s = state.session;
+  $("db-scenario").textContent = s.scenario.title;
+  const root = $("db");
+  if (!s.debrief) {
+    root.innerHTML = `<div class="card db-section"><div class="skeleton" style="width:70%"></div><div class="skeleton" style="width:45%"></div><div class="skeleton" style="height:160px"></div></div>`;
+    setTimeout(() => { s.debrief = buildDebrief(s); renderDebrief(); }, 500);
+    return;
+  }
+  const d = s.debrief, st = d.stats;
+  const points = [{ mood: s.startMood }, ...s.turns.map((t) => ({ mood: t.moodAfter, delta: t.delta, text: t.parentText }))];
+  const planText = d.tonightPlan.map((p) => "• " + p.phrase).join("\n");
+  root.innerHTML = `
+    <div class="card db-section db-hero">
+      <p class="summary">${esc(d.summary)}</p>
+      <div class="stats">
+        <div class="stat-box"><span class="k">${esc(copy.debrief.statTurns)}</span><span class="v">${st.turns}</span></div>
+        <div class="stat-box"><span class="k">${esc(copy.debrief.statStart)} → ${esc(copy.debrief.statEnd)}</span><span class="v">${st.startMood} → ${st.endMood}</span></div>
+        <span class="pill outcome-badge ${st.outcome}">${esc(copy.debrief.outcomes[st.outcome])}</span>
+        <span class="pill backup-badge" title="${esc(copy.rehearsal.backupHint)}">${esc(copy.rehearsal.backup)}</span>
+      </div>
+    </div>
+    <div class="card db-section"><h2>${esc(copy.debrief.chartTitle)}</h2><div class="chart-wrap" id="chart-wrap"></div></div>
+    <div class="card db-section"><h2>${esc(copy.debrief.worked)}</h2>${d.worked.length ? `<div class="cards-2">${d.worked.map(([t, v]) => techniqueCard(t, v)).join("")}</div>` : `<p class="muted">${esc(copy.debrief.workedEmpty)}</p>`}</div>
+    ${d.rewrites.length ? `<div class="card db-section"><h2>${esc(copy.debrief.tryInstead)}</h2>${d.rewrites.map(rewriteCard).join("")}</div>` : ""}
+    <div class="card db-section plan"><h2>${esc(copy.debrief.plan)}</h2>
+      <ol class="plan-list" id="plan-list">${d.tonightPlan.map((p) => `<li><span class="phrase">“${esc(p.phrase)}”</span><span class="tech">${esc(TECH[p.technique].label)}</span></li>`).join("")}</ol>
+      <div class="plan-actions"><button class="btn btn-secondary" type="button" id="plan-copy">${esc(copy.debrief.copy)}</button><button class="btn btn-ghost" type="button" id="plan-save">${esc(copy.debrief.save)}</button></div>
+    </div>
+    <div class="db-actions"><button class="btn btn-primary btn-lg" type="button" id="db-again">${esc(copy.debrief.again)}</button><a class="btn btn-secondary btn-lg" href="#practice">${esc(copy.debrief.newMoment)}</a></div>
+    <p class="disclaimer-short">${esc(copy.disclaimer.short)}</p>`;
+  $("chart-wrap").innerHTML = moodChart(points, $("chart-wrap").clientWidth);
+  $("plan-copy").onclick = (e) => {
+    const btn = e.currentTarget;
+    const done = () => { btn.textContent = copy.debrief.copied; setTimeout(() => { btn.textContent = copy.debrief.copy; }, 1500); };
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($("plan-list")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); };
+    try { navigator.clipboard.writeText(planText).then(done, fallback); } catch (err) { fallback(); }
+  };
+  $("plan-save").onclick = (e) => { store("plan", d.tonightPlan); e.currentTarget.textContent = copy.debrief.saved; };
+  $("db-again").onclick = () => startSession(s.scenario);
+}
+function sampleSession() {
+  const s = newSession({ ...PRESETS[0], ageGroup: ageGroupOf(PRESETS[0].ageYears) });
+  ["You're really mad that it's bedtime, huh?", "Do you want the blue toothbrush or the green one?", "If you don't brush right now, no iPad tomorrow!"].forEach((t) => {
+    const r = runTurn(s, t); s.turns.push(r.turn); s.mood = r.turn.moodAfter;
+  });
+  s.status = "ended"; s.outcome = "ended_by_parent"; s.debrief = null;
+  return s;
+}
+
+/* ---------- pricing ---------- */
+function renderPricing() {
+  const el = $("trial-day");
+  if (state.trialStarted) {
+    const day = clamp(Math.floor((Date.now() - new Date(state.trialStarted).getTime()) / 864e5) + 1, 1, 30);
+    el.textContent = copy.pricing.trialDay(day); el.hidden = false;
+  } else el.hidden = true;
+}
+
+/* ---------- router ---------- */
+const VIEWS = ["home", "practice", "rehearsal", "debrief", "pricing", "approach"];
+function route() {
+  let v = location.hash.replace("#", "") || "home";
+  if (!VIEWS.includes(v)) v = "home";
+  if (v === "rehearsal" && !state.session) state.session = newSession({ ...PRESETS[0], ageGroup: ageGroupOf(PRESETS[0].ageYears) });
+  if (v === "debrief" && (!state.session || state.session.turns.length === 0)) state.session = sampleSession();
+  if (v === "debrief" && state.session.status !== "ended") finishSession("ended_by_parent");
+  document.querySelectorAll(".view").forEach((el) => { el.hidden = el.dataset.view !== v; });
+  if (v === "practice") renderSetup();
+  if (v === "rehearsal") renderRehearsal();
+  if (v === "debrief") renderDebrief();
+  if (v === "pricing") renderPricing();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  window.scrollTo(0, 0);
+}
+
+/* ---------- events ---------- */
+function bind() {
+  $("f-age").onchange = (e) => { state.child.ageYears = Number(e.target.value); state.touched.age = true; saveChild(); renderSetup(); };
+  $("f-name").onchange = (e) => { state.child.childName = e.target.value; state.touched.name = true; saveChild(); renderSetup(); };
+  $("f-temp").onclick = (e) => { const b = e.target.closest("[data-temp]"); if (!b) return; state.child.temperament = b.dataset.temp; state.touched.temp = true; saveChild(); renderSetup(); };
+  $("tab-today").onclick = () => setTab("today");
+  $("tab-common").onclick = () => setTab("common");
+  document.querySelector(".tabs").addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    const next = state.tab === "today" ? "common" : "today"; setTab(next); $(next === "today" ? "tab-today" : "tab-common").focus();
+  });
+  $("f-moment").oninput = (e) => { $("f-moment-count").textContent = `${e.target.value.length}/600`; $("f-moment-error").hidden = true; };
+  $("panel-today").onsubmit = (e) => {
+    e.preventDefault();
+    const text = normalizeText($("f-moment").value);
+    const err = $("f-moment-error");
+    if (text.length < 10) { err.textContent = copy.setup.tooShort; err.hidden = false; return; }
+    const btn = $("f-start"); btn.disabled = true; btn.textContent = copy.setup.starting;
+    setTimeout(() => {
+      btn.disabled = false; btn.textContent = copy.setup.start;
+      const safety = detectSafety(text);
+      if (safety !== "none") { showSafety(safety); return; }
+      startSession(scenarioFromText(text, state.child));
+    }, 700);
+  };
+  $("presets").onclick = (e) => { const b = e.target.closest("[data-preset]"); if (!b) return; startSession(presetScenario(PRESETS.find((p) => p.id === b.dataset.preset))); };
+
+  $("ov-start").onclick = () => { state.started = true; $("r-overlay").hidden = true; say(state.session.scenario.openingLine); $("r-text").focus(); };
+  $("sw-voice").onclick = () => { state.prefs.voiceOn = !state.prefs.voiceOn; store("prefs", state.prefs); $("sw-voice").setAttribute("aria-checked", String(state.prefs.voiceOn)); if (!state.prefs.voiceOn) { try { speechSynthesis.cancel(); } catch (e) {} } };
+  $("sw-hints").onclick = () => { state.prefs.coachHints = !state.prefs.coachHints; store("prefs", state.prefs); $("sw-hints").setAttribute("aria-checked", String(state.prefs.coachHints)); $("r-transcript").innerHTML = transcriptHTML(); };
+  $("r-end").onclick = () => {
+    const s = state.session;
+    if (s.turns.length === 0) { state.session = null; location.hash = "practice"; return; }
+    if (s.status === "active") finishSession("ended_by_parent"); else finishSession(s.outcome);
+    location.hash = "debrief";
+  };
+  $("r-form").onsubmit = (e) => { e.preventDefault(); sendTurn($("r-text").value); };
+  $("r-text").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendTurn($("r-text").value); }
+    if (e.key === "Escape" && rec) rec.stop();
+  });
+  $("r-text").addEventListener("input", () => { autoGrow(); updateCount(); });
+  $("r-mic").onclick = toggleMic;
+  $("safety-back").onclick = () => { $("safety").hidden = true; };
+  document.querySelectorAll(".buy").forEach((b) => { b.onclick = () => { $("buy-thanks").hidden = false; }; });
+  window.addEventListener("hashchange", route);
+  let wasSmall = window.matchMedia("(max-width: 899px)").matches;
+  window.addEventListener("resize", () => { const small = window.matchMedia("(max-width: 899px)").matches; if (small !== wasSmall && state.session && !$("view-rehearsal").hidden) { wasSmall = small; renderStage(); } });
+}
+
+fillCopy();
+bind();
+route();
+</script>
+
+</body>
+</html>
