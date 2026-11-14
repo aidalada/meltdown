@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
 import { textsFor } from "@/content/locale";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
-import { buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "./coach";
+import { AGE_OPTIONS, yearsForGroup } from "./age";
+import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "./coach";
+import { ageGroupOf } from "./data";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
 import {
   addCheckin, forgetEverything, listSessions, loadCoachThread, loadProfile, saveCoachThread, saveProfile, saveSession,
@@ -12,6 +14,7 @@ import {
 import type { Session } from "./types";
 
 const EMPTY: CoachMemory = { child: null, rehearsals: 0, calmReached: 0, lastSession: null, plan: null, planCheckedIn: false, struggle: null };
+const MAX = { name: "Max", ageYears: 4, temperament: "strong-willed" } as const;
 const NOW = new Date(2026, 10, 15, 13, 15);
 const YESTERDAY = new Date(2026, 10, 14, 20, 0);
 const THREAT_STORY = "He screamed about brushing teeth, so I told him: If you don't brush right now, no iPad tomorrow! It got worse.";
@@ -118,14 +121,27 @@ describe("coachGreeting", () => {
   });
 
   it("does not ask how a plan went on the day it was made", () => {
-    const memory: CoachMemory = { ...EMPTY, plan: { sessionId: "s1", phrase: "Top teeth first?", createdAt: NOW.toISOString() } };
+    const memory: CoachMemory = { ...EMPTY, child: MAX, plan: { sessionId: "s1", phrase: "Top teeth first?", createdAt: NOW.toISOString() } };
     const [greeting] = coachGreeting(memory, false, NOW);
     expect(coach(greeting).checkin).toBeUndefined();
+    expect(coach(greeting).lines).toEqual([copy.coach.greetPlanToday("Top teeth first?")]);
   });
 
   it("welcomes a returning parent back to their last rehearsal", () => {
-    const memory: CoachMemory = { ...EMPTY, lastSession: { scenarioId: "leaving-playground", title: "Leaving the playground", outcome: "calm_reached" } };
+    const memory: CoachMemory = { ...EMPTY, child: MAX, lastSession: { scenarioId: "leaving-playground", title: "Leaving the playground", outcome: "calm_reached" } };
     expect(coach(coachGreeting(memory, false, NOW)[0]).lines[0]).toBe(copy.coach.greetBack("Leaving the playground"));
+  });
+
+  it("asks the child's age with one tap before anything else, then asks about the hard moment", () => {
+    const [disclosure, question] = coachGreeting(EMPTY, true, NOW);
+    expect(coach(disclosure).lines).toEqual([copy.coach.disclosure]);
+    expect(coach(question).askAge).toBe(true);
+    expect(coach(ageReply(NOW)).lines).toEqual([copy.coach.ageThanks, copy.coach.greetFirst]);
+  });
+
+  it("does not ask the age again once the child is known", () => {
+    const messages = coachGreeting({ ...EMPTY, child: MAX }, true, NOW);
+    expect(messages.some((m) => m.role === "coach" && m.askAge)).toBe(false);
   });
 
   it("replies to each check-in answer", () => {
@@ -204,7 +220,24 @@ describe("Sebastian in Russian", () => {
   });
 
   it("greets in Russian with the translated scenario title", () => {
-    const memory: CoachMemory = { ...EMPTY, lastSession: { scenarioId: "teeth-bedtime", title: "Brushing teeth at bedtime", outcome: "ended_by_parent" } };
+    const memory: CoachMemory = { ...EMPTY, child: MAX, lastSession: { scenarioId: "teeth-bedtime", title: "Brushing teeth at bedtime", outcome: "ended_by_parent" } };
     expect(coach(coachGreeting(memory, false, NOW, RU)[0]).lines[0]).toBe(RU.copy.coach.greetBack("Чистка зубов перед сном"));
+  });
+});
+
+describe("age ranges", () => {
+  it("cover ages 2 to 12 with the engine's own age groups", () => {
+    for (const option of AGE_OPTIONS) expect(ageGroupOf(option.years)).toBe(option.group);
+    expect(AGE_OPTIONS.map((o) => o.range)).toEqual(["2–3", "4–5", "6–8", "9–12"]);
+  });
+
+  it("keep an age that is already inside the chosen range", () => {
+    expect(yearsForGroup("preschool", 5)).toBe(5);
+    expect(yearsForGroup("preteen", 5)).toBe(10);
+  });
+
+  it("read naturally in Russian", () => {
+    const { setup } = textsFor("ru").copy;
+    expect(AGE_OPTIONS.map((o) => setup.ageRange(o.range))).toEqual(["2–3 года", "4–5 лет", "6–8 лет", "9–12 лет"]);
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { AgePicker } from "@/components/AgePicker";
 import { Disclosure } from "@/components/Disclosure";
 import { Icon } from "@/components/Icon";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
@@ -8,7 +9,7 @@ import { useCopy, useLocale, useTexts } from "@/content/i18n";
 import { TECHNIQUE_BY_TAG } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import type { Checkin } from "@/lib/storage";
-import type { PositiveTag } from "@/lib/types";
+import type { AgeGroup, PositiveTag } from "@/lib/types";
 import type { CoachMessage } from "@/types/coach";
 
 interface CoachThreadProps {
@@ -18,7 +19,10 @@ interface CoachThreadProps {
   today: string;
   /** Session id of the plan still waiting for its check-in. */
   pendingCheckin: string | null;
+  /** True while Sebastian still waits for the child's age. */
+  pendingAge: boolean;
   rehearsing: boolean;
+  onPickAge(group: AgeGroup): void;
   onCheckin(sessionId: string, result: Checkin["result"]): void;
   onRehearse(text: string, preset?: string): void;
 }
@@ -29,7 +33,7 @@ const DAY_LABEL = {
 };
 const CHECKIN_ANSWERS: Checkin["result"][] = ["worked", "partly", "didnt"];
 
-export function CoachThread({ messages, typing, today, pendingCheckin, rehearsing, onCheckin, onRehearse }: CoachThreadProps) {
+export function CoachThread({ messages, typing, today, pendingCheckin, pendingAge, rehearsing, onPickAge, onCheckin, onRehearse }: CoachThreadProps) {
   const copy = useCopy();
   const locale = useLocale();
   const end = useRef<HTMLLIElement>(null);
@@ -70,6 +74,7 @@ export function CoachThread({ messages, typing, today, pendingCheckin, rehearsin
                     {m.technique && <Disclosure.Panel><WhyItWorks tag={m.technique} /></Disclosure.Panel>}
                   </Disclosure>
                 )}
+                {m.askAge && pendingAge && <AgePicker variant="chips" value={null} onPick={onPickAge} />}
                 {m.checkin && m.checkin === pendingCheckin && (
                   <div className="flex flex-wrap gap-2">
                     {CHECKIN_ANSWERS.map((result) => (

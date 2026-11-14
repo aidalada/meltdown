@@ -1,13 +1,26 @@
 "use client";
 
 import { useCopy } from "@/content/i18n";
-import type { MoodBand } from "@/lib/types";
+import type { AgeGroup, MoodBand } from "@/lib/types";
 
 export const MOOD_COLOR: Record<MoodBand, string> = {
   meltdown: "#E5484D", upset: "#F76B15", grumpy: "#F5A524", warming: "#4C9AFF", calm: "#30A46C",
 };
 
-const HAIR = "M40 95 Q45 35 100 32 Q155 35 160 95 Q150 60 100 58 Q50 60 40 95 Z";
+/*
+ * The child grows with the chosen age range. Only the hair and extras change; brows, eyes and
+ * mouth keep the same geometry, because they carry the mood (SPEC 13.3).
+ * toddler: a single tuft · preschool: a soft cap · school: side part, cowlick, freckles ·
+ * preteen: longer swept hair and headphones.
+ */
+const HAIR: Record<AgeGroup, string> = {
+  toddler: "M86 54 Q80 36 96 28 Q94 38 104 30 Q104 40 116 38 Q110 46 116 54 Q100 46 86 54 Z",
+  preschool: "M40 95 Q45 35 100 32 Q155 35 160 95 Q150 60 100 58 Q50 60 40 95 Z",
+  school: "M38 100 Q38 30 100 30 Q162 30 162 100 Q156 64 122 58 Q100 68 72 58 Q46 66 38 100 Z",
+  preteen: "M34 112 Q30 26 100 24 Q170 26 166 112 Q162 76 138 62 Q104 84 60 64 Q42 78 34 112 Z",
+};
+const HAIR_COLOR = "#5A3E2B";
+const FRECKLES = [[61, 123], [67, 127], [73, 122], [127, 122], [133, 127], [139, 123]];
 const BROWS: Record<MoodBand, [string, string]> = {
   calm: ["M68 88 Q78 83 88 88", "M112 88 Q122 83 132 88"],
   warming: ["M68 88 L88 87", "M112 87 L132 88"],
@@ -28,13 +41,17 @@ export interface ChildAvatarProps {
   speaking: boolean;
   thinking: boolean;
   name: string;
+  /** Age range of the child; changes the look. Defaults to the preschooler from the demo. */
+  age?: AgeGroup;
   size?: number;
   showName?: boolean;
   pop?: boolean;
+  /** True when nearby text already names the child (age buttons, memory panel). */
+  decorative?: boolean;
 }
 
 /** 2D practice child (SPEC 13.3). Pure SVG, safe to render on the server. */
-export function ChildAvatar({ band, speaking, thinking, name, size = 220, showName = true, pop = false }: ChildAvatarProps) {
+export function ChildAvatar({ band, speaking, thinking, name, age = "preschool", size = 220, showName = true, pop = false, decorative = false }: ChildAvatarProps) {
   const copy = useCopy();
   const dx = thinking ? 3 : 0;
   const dy = thinking ? -4 : 0;
@@ -42,14 +59,29 @@ export function ChildAvatar({ band, speaking, thinking, name, size = 220, showNa
   const classes = ["avatar", "flex flex-col items-center gap-2", speaking ? "avatar-speaking" : "", pop ? "avatar-pop" : ""].join(" ");
   return (
     <div className={classes}>
-      <div className="avatar-slot" role="img" aria-label={`${name}, ${copy.bands[band]}`}>
+      <div className="avatar-slot" {...(decorative ? { "aria-hidden": true } : { role: "img", "aria-label": `${name}, ${copy.bands[band]}` })}>
         <svg viewBox="0 0 200 200" width={size} height={size} aria-hidden="true">
           <circle className="halo" cx="100" cy="100" r="96" fill={MOOD_COLOR[band]} opacity="0.15" />
           <g className="face">
             <circle cx="38" cy="110" r="10" fill="#FFD7B0" />
             <circle cx="162" cy="110" r="10" fill="#FFD7B0" />
             <circle cx="100" cy="108" r="62" fill="#FFD7B0" stroke="#E8B98E" strokeWidth="2" />
-            <path d={HAIR} fill="#5A3E2B" />
+            <path d={HAIR[age]} fill={HAIR_COLOR} />
+            {age === "school" && (
+              <>
+                <path d="M94 33 Q98 15 112 19 Q105 24 108 33 Z" fill={HAIR_COLOR} />
+                {FRECKLES.map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.8" fill="#D9965F" />)}
+              </>
+            )}
+            {age === "preteen" && (
+              <>
+                <path d="M29 104 Q29 11 100 11 Q171 11 171 104" stroke="#3A4A7A" strokeWidth="8" fill="none" strokeLinecap="round" />
+                <rect x="19" y="92" width="19" height="36" rx="8" fill="#3A4A7A" />
+                <rect x="162" y="92" width="19" height="36" rx="8" fill="#3A4A7A" />
+                <rect x="23" y="99" width="5" height="22" rx="2.5" fill="#FF8A3D" />
+                <rect x="172" y="99" width="5" height="22" rx="2.5" fill="#FF8A3D" />
+              </>
+            )}
             <path d={browL} stroke="#5A3E2B" strokeWidth="4" fill="none" strokeLinecap="round" />
             <path d={browR} stroke="#5A3E2B" strokeWidth="4" fill="none" strokeLinecap="round" />
             {band === "meltdown" ? (

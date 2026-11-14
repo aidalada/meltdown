@@ -27,7 +27,9 @@ function Coach() {
   const copy = useCopy();
   const coach = useCoach();
   const [confirmForget, setConfirmForget] = useState(false);
-  const started = coach.messages.some((m) => m.role === "parent");
+  // Starters are the next step after the age question, and go away once Sebastian has given advice.
+  const advised = coach.messages.some((m) => m.role === "coach" && m.technique !== undefined);
+  const showStarters = !advised && !coach.pendingAge && !coach.typing;
 
   return (
     <div className="wrap coach-layout">
@@ -39,11 +41,13 @@ function Coach() {
           typing={coach.typing}
           today={coach.today}
           pendingCheckin={coach.pendingCheckin}
+          pendingAge={coach.pendingAge}
           rehearsing={coach.rehearsing}
+          onPickAge={coach.pickAge}
           onCheckin={coach.checkin}
           onRehearse={(text, preset) => void coach.rehearse(text, preset)}
         />
-        {!started && !coach.typing && (
+        {showStarters && (
           <div className="grid gap-2 pb-2">
             <p className="eyebrow">{copy.coach.startersLabel}</p>
             <ul className="m-0 grid list-none gap-2 p-0">

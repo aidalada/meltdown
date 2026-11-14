@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { ChildAvatar } from "@/components/ChildAvatar";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useCopy } from "@/content/i18n";
+import { ageGroupOf } from "@/lib/data";
 import type { CoachMemory } from "@/types/coach";
 
 interface CoachPanelProps {
@@ -47,7 +49,13 @@ export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelP
             </div>
             <dl className="memory-list">
               {child && (
-                <div><dt>{copy.coach.memoryChild}</dt><dd>{copy.coach.memoryChildValue(child.name, child.ageYears, copy.setup.temperaments[child.temperament])}</dd></div>
+                <div className="flex items-center gap-3">
+                  <ChildAvatar band="calm" speaking={false} thinking={false} name={child.name} age={ageGroupOf(child.ageYears)} size={44} showName={false} decorative />
+                  <div className="min-w-0">
+                    <dt>{copy.coach.memoryChild}</dt>
+                    <dd>{copy.coach.memoryChildValue(child.name, child.ageYears, copy.setup.temperaments[child.temperament])}</dd>
+                  </div>
+                </div>
               )}
               {plan && <div><dt>{copy.coach.memoryPlan}</dt><dd>“{plan.phrase}”</dd></div>}
               {struggle && <div><dt>{copy.coach.memoryWorkingOn}</dt><dd>{copy.coach.workingOn[struggle]}</dd></div>}
@@ -61,14 +69,14 @@ export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelP
           {copy.coach.memoryPrivacy}
         </p>
         <div className="grid gap-2">
-          <button type="button" className="btn btn-secondary" onClick={onRemind}>
+          <button type="button" className="btn btn-secondary btn-wrap" onClick={onRemind}>
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" />
             </svg>
             {copy.coach.reminder}
           </button>
           {reminded && <p className="text-sm font-semibold text-good-text" role="status">{copy.coach.reminderDone}</p>}
-          <button type="button" className="btn btn-ghost text-bad-text" onClick={onForget}>{copy.coach.forget}</button>
+          <button type="button" className="btn btn-ghost btn-wrap text-bad-text" onClick={onForget}>{copy.coach.forget}</button>
         </div>
       </div>
     </aside>

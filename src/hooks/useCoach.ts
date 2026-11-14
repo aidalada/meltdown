@@ -7,14 +7,16 @@ import type { Texts } from "@/content/locale";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import { postScenario, RateLimitedError } from "@/lib/api-client";
-import { buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "@/lib/coach";
+import { rangeOf, yearsForGroup } from "@/lib/age";
+import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "@/lib/coach";
+import { askCoach, coachRequest } from "@/lib/coach-client";
 import { ageGroupOf, PRESETS } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import {
   addCheckin, DEFAULT_PROFILE, forgetEverything, listSessions, loadCheckins, loadCoachThread, loadPlan, loadProfile,
-  saveCoachThread, type Checkin,
+  saveCoachThread, saveProfile, type Checkin,
 } from "@/lib/storage";
-import type { Scenario } from "@/lib/types";
+import type { AgeGroup, Scenario } from "@/lib/types";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
 
 const DAY_MS = 86_400_000;
@@ -67,13 +69,29 @@ export function useCoach() {
     const withParent: CoachMessage[] = [...messages, { role: "parent", at: clock().toISOString(), text }];
     commit(withParent);
     setTyping(true);
-    await wait(REPLY_DELAY_MS);
-    const reply = coachReply(text, memory, clock(), texts);
-    commit([...withParent, reply.message]);
+    // The local coach always answers first: it runs the safety check and is the fallback.
+    const local = coachReply(text, memory, clock(), texts);
+    // Only a real story goes to the model: never crisis words, never a too-short message.
+    const story = local.kind === "message" && local.message.role === "coach" && local.message.rehearse !== undefined;
+    const [ai] = await Promise.all([
+      story ? askCoach(coachRequest(text, texts.locale, memory, messages)) : null,
+      wait(REPLY_DELAY_MS),
+    ]);
+    let message = local.message;
+    let safety = local.kind === "safety" ? local.safety : null;
+    if (ai && ai.safety !== "none") {
+      safety = ai.safety;
+      message = { role: "coach", at: clock().toISOString(), lines: [copy.coach.safetyLine] };
+    } else if (ai && local.message.role === "coach") {
+      // The model's words and choice of technique; the why and the source still come from techniques.json.
+      message = { ...local.message, lines: [ai.lead], technique: ai.technique, say: ai.say, preset: ai.preset ?? local.message.preset };
+    }
+    if (story) track("coach_reply", { source: ai ? "ai" : "fallback" });
+    commit([...withParent, message]);
     setTyping(false);
-    if (reply.kind === "safety") {
-      setSafety(reply.safety);
-      track("safety_shown", { kind: reply.safety });
+    if (safety) {
+      setSafety(safety);
+      track("safety_shown", { kind: safety });
     }
     return true;
   }
@@ -84,6 +102,15 @@ export function useCoach() {
     track("checkin", { result });
     setMemory(readMemory());
     commit([...messages, { role: "parent", at: now.toISOString(), text: copy.progress[result] }, checkinReply(result, now, texts)]);
+  }
+
+  /** The parent answers Sebastian's age question with one tap; the answer is kept in the browser profile. */
+  function pickAge(group: AgeGroup) {
+    const now = clock();
+    const profile = loadProfile() ?? DEFAULT_PROFILE;
+    saveProfile({ ...profile, ageYears: yearsForGroup(group, profile.ageYears) });
+    setMemory(readMemory());
+    commit([...messages, { role: "parent", at: now.toISOString(), text: copy.setup.ageRange(rangeOf(group)) }, ageReply(now, texts)]);
   }
 
   function begin(scenario: Scenario) {
@@ -153,7 +180,9 @@ export function useCoach() {
   return {
     memory, messages, today, typing, rehearsing, safety, reminded,
     pendingCheckin: memory.plan && !memory.planCheckedIn ? memory.plan.sessionId : null,
-    send, checkin, rehearse, remind, forget,
+    /** True until Sebastian knows the child's age. */
+    pendingAge: memory.child === null,
+    send, checkin, pickAge, rehearse, remind, forget,
     closeSafety: () => setSafety(null),
   };
 }

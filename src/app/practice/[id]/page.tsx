@@ -132,7 +132,7 @@ function Rehearsal({ id }: { id: string }) {
 
       <div className="relative grid grid-cols-[minmax(0,1fr)] gap-4 min-[900px]:grid-cols-[340px_minmax(0,1fr)] min-[900px]:items-start min-[900px]:gap-6">
         <aside className="card stage" aria-label={s.scenario.childName}>
-          <ChildAvatar key={s.turns.length} band={band} speaking={voice.speaking} thinking={pending} name={s.scenario.childName} pop={s.turns.length > 0} />
+          <ChildAvatar key={s.turns.length} band={band} speaking={voice.speaking} thinking={pending} name={s.scenario.childName} age={s.scenario.ageGroup} pop={s.turns.length > 0} />
           <MoodMeter value={s.mood} delta={lastTurn ? lastTurn.delta : null} deltaKey={s.turns.length} />
           <div className="flex flex-wrap justify-center gap-1.5 max-[899px]:justify-start">
             <BackupBadge visible={usedBackup} />
@@ -155,7 +155,7 @@ function Rehearsal({ id }: { id: string }) {
         {!started && !ended && (
           <div className="overlay">
             <div className="card m-4 grid max-w-[360px] justify-items-center gap-3 p-6 text-center">
-              <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} size={120} showName={false} />
+              <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} age={s.scenario.ageGroup} size={120} showName={false} />
               <h2 className="text-[22px]">{sceneText(s.scenario).title}</h2>
               <p className="text-[15px] text-muted">{sceneText(s.scenario).setting}</p>
               <button className="btn btn-primary btn-lg" type="button" onClick={start} autoFocus>{copy.rehearsal.startOverlay}</button>

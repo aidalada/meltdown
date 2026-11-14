@@ -17,6 +17,8 @@ export type CoachMessage =
       rehearse?: string;
       /** Session id of the saved plan this message asks about. */
       checkin?: string;
+      /** Sebastian asks the child's age here; the chat shows the age buttons under it. */
+      askAge?: boolean;
       /** Preset matching the moment, used to start a rehearsal without the API (Russian input). */
       preset?: string;
     };
