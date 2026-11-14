@@ -45,7 +45,8 @@ function First30() {
 
 function BuyButton({ plan, primary, onWaitlist }: { plan: Plan; primary: boolean; onWaitlist(): void }) {
   const className = `btn btn-lg ${primary ? "btn-primary" : "btn-secondary"}`;
-  const label = copy.pricing[plan].cta;
+  // Without a Stripe link the button only joins the waitlist, so it must say so (SPEC 14.5).
+  const label = LINKS[plan] ? copy.pricing[plan].cta : copy.pricing.waitlistCta;
   if (LINKS[plan]) {
     return (
       <a className={className} href={LINKS[plan]} target="_blank" rel="noopener noreferrer" onClick={() => track("buy_click", { plan })}>
