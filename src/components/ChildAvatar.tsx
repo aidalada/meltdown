@@ -91,11 +91,11 @@ export function ChildAvatar({ band, speaking, thinking, name, size = 220, showNa
           </g>
           {thinking && (
             <g>
-              <circle cx="150" cy="60" r="4" fill="#FFFFFF" stroke="#E3E7EF" strokeWidth="2" />
-              <ellipse cx="170" cy="36" rx="26" ry="17" fill="#FFFFFF" stroke="#E3E7EF" strokeWidth="2" />
-              <circle className="think-dot" cx="160" cy="36" r="3.5" fill="#5B6478" />
-              <circle className="think-dot think-dot-2" cx="170" cy="36" r="3.5" fill="#5B6478" />
-              <circle className="think-dot think-dot-3" cx="180" cy="36" r="3.5" fill="#5B6478" />
+              <circle cx="150" cy="60" r="4" fill="#FFFFFF" stroke="#EBE3D8" strokeWidth="2" />
+              <ellipse cx="170" cy="36" rx="26" ry="17" fill="#FFFFFF" stroke="#EBE3D8" strokeWidth="2" />
+              <circle className="think-dot" cx="160" cy="36" r="3.5" fill="#655C55" />
+              <circle className="think-dot think-dot-2" cx="170" cy="36" r="3.5" fill="#655C55" />
+              <circle className="think-dot think-dot-3" cx="180" cy="36" r="3.5" fill="#655C55" />
             </g>
           )}
         </svg>

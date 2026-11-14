@@ -4,12 +4,16 @@ import { useState } from "react";
 import { CoachPanel } from "@/components/coach/CoachPanel";
 import { CoachThread } from "@/components/coach/CoachThread";
 import { ForgetDialog } from "@/components/coach/ForgetDialog";
+import { Icon, type IconName } from "@/components/Icon";
 import { SafetyNotice } from "@/components/SafetyNotice";
 import { PageSkeleton } from "@/components/Skeleton";
 import { TurnInput } from "@/components/TurnInput";
 import { useCopy, useLocale } from "@/content/i18n";
 import { useCoach } from "@/hooks/useCoach";
 import { useHydrated } from "@/hooks/useHydrated";
+
+/** The three starters are bedtime, the playground and getting dressed, in both languages. */
+const STARTER_ICONS: IconName[] = ["toothbrush", "slide", "shirt"];
 
 export default function CoachPage() {
   const hydrated = useHydrated();
@@ -43,9 +47,12 @@ function Coach() {
           <div className="grid gap-2 pb-2">
             <p className="eyebrow">{copy.coach.startersLabel}</p>
             <ul className="m-0 grid list-none gap-2 p-0">
-              {copy.coach.starters.map((line) => (
+              {copy.coach.starters.map((line, i) => (
                 <li key={line}>
-                  <button type="button" className="starter" onClick={() => void coach.send(line)}>{line}</button>
+                  <button type="button" className="starter" onClick={() => void coach.send(line)}>
+                    <span className="icon-tile icon-tile-sm" aria-hidden="true"><Icon name={STARTER_ICONS[i] ?? "heart"} size={20} /></span>
+                    <span>{line}</span>
+                  </button>
                 </li>
               ))}
             </ul>

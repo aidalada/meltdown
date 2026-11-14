@@ -11,7 +11,7 @@ import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { RewriteCard } from "@/components/RewriteCard";
 import { PageSkeleton } from "@/components/Skeleton";
 import { TechniqueCard } from "@/components/TechniqueCard";
-import { useCopy } from "@/content/i18n";
+import { useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
@@ -45,7 +45,7 @@ function finalOutcome(s: Session): Exclude<Outcome, "continue"> {
 }
 
 function Debrief({ id }: { id: string }) {
-  const copy = useCopy();
+  const { copy, scenario } = useTexts();
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(() => loadSession(id));
   const [source, setSource] = useState<"ai" | "fallback" | null>(() => loadSession(id)?.debrief?.source ?? null);
@@ -94,7 +94,7 @@ function Debrief({ id }: { id: string }) {
   return (
     <div className="wrap wrap-narrow">
       <div className="grid gap-2 pt-7 pb-5">
-        <p className="eyebrow">{s.scenario.title}</p>
+        <p className="eyebrow">{scenario(s.scenario).title}</p>
         <h1 className="text-[clamp(28px,4.6vw,40px)]">{copy.debrief.howItWent}</h1>
       </div>
 
@@ -125,11 +125,18 @@ function Debrief({ id }: { id: string }) {
             </div>
           </section>
 
+          <PlanCard
+            phrases={d.tonightPlan}
+            onCopy={() => track("plan_copied")}
+            onSave={() => { savePlan(s.id, d.tonightPlan); track("plan_saved"); }}
+          />
+
           <section className="card db-section">
             <h2 className="text-[22px]">{copy.debrief.chartTitle}</h2>
             <MoodChart points={points} />
           </section>
 
+          <h2 className="eyebrow mt-2">{copy.debrief.details}</h2>
           <section className="card db-section">
             <h2 className="text-[22px]">{copy.debrief.worked}</h2>
             {worked.length ? (
@@ -145,12 +152,6 @@ function Debrief({ id }: { id: string }) {
               {d.rewrites.map((r) => <RewriteCard key={r.turnIndex} rewrite={r} />)}
             </section>
           )}
-
-          <PlanCard
-            phrases={d.tonightPlan}
-            onCopy={() => track("plan_copied")}
-            onSave={() => { savePlan(s.id, d.tonightPlan); track("plan_saved"); }}
-          />
 
           <div className="flex flex-wrap gap-2.5">
             <button className="btn btn-primary btn-lg" type="button" onClick={() => practiceAgain(s.difficulty)}>{copy.debrief.again}</button>

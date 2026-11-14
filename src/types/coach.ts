@@ -9,6 +9,10 @@ export type CoachMessage =
       lines: string[];
       /** Technique Sebastian suggests; its source comes from techniques.json. */
       technique?: PositiveTag;
+      /** A phrase the parent can say instead (English: the practice child is American). */
+      say?: string;
+      /** The harmful habit in this story also showed up in past rehearsals. */
+      again?: boolean;
       /** The parent's own words, ready to become a rehearsal scenario. */
       rehearse?: string;
       /** Session id of the saved plan this message asks about. */

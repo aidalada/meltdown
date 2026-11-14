@@ -41,12 +41,12 @@ export function MoodChart({ points }: { points: ChartPoint[] }) {
           <rect key={band} x={L} y={y(b)} width={iw} height={y(a) - y(b)} fill={MOOD_COLOR[band]} opacity={0.08} />
         ))}
         {[0, 20, 40, 60, 80, 100].map((v) => (
-          <text key={v} x={L - 8} y={y(v) + 4} textAnchor="end" fill="#5B6478" style={TEXT}>{v}</text>
+          <text key={v} x={L - 8} y={y(v) + 4} textAnchor="end" fill="#655C55" style={TEXT}>{v}</text>
         ))}
         <line x1={L} x2={W - R} y1={y(80)} y2={y(80)} stroke="#30A46C" strokeWidth={1.5} strokeDasharray="5 5" />
         <text x={L + 6} y={y(80) - 6} fill="#17704A" fontWeight={600} style={TEXT}>{copy.bands.calm}</text>
         {points.map((p, i) => (
-          <text key={`x${i}`} x={x(i)} y={H - 8} textAnchor="middle" fill="#5B6478" style={TEXT}>
+          <text key={`x${i}`} x={x(i)} y={H - 8} textAnchor="middle" fill="#655C55" style={TEXT}>
             {i === 0 ? copy.debrief.statStart : p.turn}
           </text>
         ))}
@@ -57,7 +57,7 @@ export function MoodChart({ points }: { points: ChartPoint[] }) {
             <circle cx={x(i)} cy={y(p.mood)} r={5} fill={MOOD_COLOR[bandOf(p.mood)]} stroke="#FFFFFF" strokeWidth={2} />
             {i > 0 && p.delta !== undefined && (
               <text x={x(i)} y={clamp(y(p.mood) + (p.delta >= 0 ? -12 : 20), T + 10, H - B - 4)} textAnchor="middle" fontWeight={700}
-                fill={p.delta > 0 ? "#17704A" : p.delta < 0 ? "#B3282E" : "#5B6478"} style={TEXT}>
+                fill={p.delta > 0 ? "#17704A" : p.delta < 0 ? "#B3282E" : "#655C55"} style={TEXT}>
                 {signed(p.delta)}
               </text>
             )}

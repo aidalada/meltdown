@@ -58,7 +58,7 @@ describe("coachReply", () => {
   it("gives an example that fits the moment", () => {
     const m = coach(coachReply("Leaving the playground ends in tears. I end up threatening to leave without him.", EMPTY, NOW).message);
     expect(m.technique).toBe("offer_choice");
-    expect(m.lines).toContain(copy.coach.example("One more slide or two more swings, then we go?"));
+    expect(m.say).toBe("One more slide or two more swings, then we go?");
   });
 
   it("does not blame the parent for the child's screaming", () => {
@@ -67,11 +67,11 @@ describe("coachReply", () => {
     expect(m.lines.some((line) => blame.includes(line))).toBe(false);
   });
 
-  it("takes every explanation and source from techniques.json", () => {
+  it("keeps the answer short: one line, a phrase to say, the why on demand", () => {
     const m = coach(coachReply(THREAT_STORY, EMPTY, NOW).message);
-    const technique = TECHNIQUE_BY_TAG[m.technique ?? "name_feeling"];
-    expect(m.lines.some((line) => line.includes(technique.why))).toBe(true);
-    expect(technique.source.url).toMatch(/^https:\/\//);
+    expect(m.lines).toHaveLength(1);
+    expect(m.say).toBe("When teeth are sparkly, then we read your story.");
+    expect(TECHNIQUE_BY_TAG[m.technique ?? "name_feeling"].source.url).toMatch(/^https:\/\//);
   });
 
   it("sends crisis words to the safety notice instead of advice", () => {
@@ -95,7 +95,8 @@ describe("coachReply", () => {
 
   it("remembers a habit that keeps coming up", () => {
     const m = coach(coachReply(THREAT_STORY, { ...EMPTY, struggle: "threat" }, NOW).message);
-    expect(m.lines).toContain(copy.coach.again);
+    expect(m.again).toBe(true);
+    expect(coach(coachReply(THREAT_STORY, EMPTY, NOW).message).again).toBeUndefined();
   });
 
   it("answers the same words the same way", () => {
@@ -182,7 +183,7 @@ describe("Sebastian in Russian", () => {
     expect(m.lines).toContain(RU.copy.coach.noticedPlain.threat);
     expect(m.technique).toBe("when_then");
     expect(m.preset).toBe("teeth-bedtime");
-    expect(m.lines.some((line) => line.includes(RU.technique("when_then").why))).toBe(true);
+    expect(m.lines).toEqual([RU.copy.coach.noticedPlain.threat]);
   });
 
   it("catches Russian crisis words, which the English-only safety check would miss", () => {

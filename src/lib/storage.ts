@@ -166,6 +166,8 @@ const CoachMessageSchema = z.discriminatedUnion("role", [
     at: z.string(),
     lines: z.array(z.string()),
     technique: PositiveTagSchema.optional(),
+    say: z.string().optional(),
+    again: z.boolean().optional(),
     rehearse: z.string().optional(),
     checkin: z.string().optional(),
     preset: z.string().optional(),
