@@ -239,3 +239,20 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* SOS breathing circle: 4 s in, 6 s out (SPEC 14.7) */
+@layer components {
+  .breath { position: relative; width: 240px; height: 240px; display: grid; place-items: center; }
+  .breath-circle { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle, var(--color-mood-warming) 0%, var(--color-primary-soft) 70%); opacity: .55; animation: breathe 10s ease-in-out infinite; }
+  .breath-label { position: relative; font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--color-ink); }
+  .breath-in { animation: show-in 10s linear infinite; }
+  .breath-out { position: absolute; animation: show-out 10s linear infinite; }
+}
+@keyframes breathe { 0% { transform: scale(.55); } 40% { transform: scale(1); } 100% { transform: scale(.55); } }
+@keyframes show-in { 0%, 38% { opacity: 1; } 40%, 100% { opacity: 0; } }
+@keyframes show-out { 0%, 38% { opacity: 0; } 40%, 98% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .breath-circle { transform: scale(.8); }
+  .breath-out { display: none; }
+  .breath-in { opacity: 1 !important; }
+}

@@ -64,6 +64,7 @@ export const copy = {
     backup: "Backup coach",
     backupHint: "Our AI is unavailable, so a simpler built-in coach is responding.",
     offline: "Offline demo",
+    hard: "Harder version",
   },
   bands: { meltdown: "Meltdown", upset: "Upset", grumpy: "Grumpy", warming: "Warming up", calm: "Calm" },
   debrief: {
@@ -104,6 +105,10 @@ export const copy = {
     trialDay: (n: number) => `Day ${n} of 30 of your free trial`,
     waitlistThanks: "Thanks! We'll let you know.",
     success: "You're in! (Test mode — no real charge.)",
+    first30Title: "Your first 30 days",
+    first30Rehearsals: "Rehearsals",
+    first30Calm: "Times your child calmed down",
+    first30Phrases: "Your best phrases",
   },
   approach: {
     title: "Our approach",
@@ -140,7 +145,23 @@ export const copy = {
     worked: "Worked",
     partly: "Partly",
     didnt: "Didn't",
+    checkinThanks: "Thanks. Keep practicing the phrases that worked.",
     empty: "No rehearsals yet.",
+    recentTitle: "Recent rehearsals",
+    open: "Open debrief",
+    resume: "Continue",
+    sosLink: "Open SOS card",
   },
-  sos: { title: "Breathe out first.", back: "Back" },
+  sos: {
+    title: "Breathe out first.",
+    breatheIn: "Breathe in",
+    breatheOut: "Breathe out",
+    phrasesTitle: "Your 3 phrases",
+    back: "Back",
+  },
+  notFound: {
+    title: "This page doesn't exist.",
+    body: "The link may be old, or the practice was saved on another device.",
+    home: "Go to the home page",
+  },
 } as const;

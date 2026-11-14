@@ -121,6 +121,7 @@ function Rehearsal({ id }: { id: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="pill">{copy.rehearsal.turnOf(turnNumber, MAX_TURNS)}</span>
+          {s.difficulty === "hard" && <span className="pill pill-accent">{copy.rehearsal.hard}</span>}
           <Switch checked={profile.voiceOn} label={copy.rehearsal.voice} onToggle={() => updateProfile({ voiceOn: !profile.voiceOn })} />
           <Switch checked={profile.coachHints} label={copy.rehearsal.hints} onToggle={() => updateProfile({ coachHints: !profile.coachHints })} />
           <button className="btn btn-secondary" type="button" onClick={end}>{copy.rehearsal.end}</button>

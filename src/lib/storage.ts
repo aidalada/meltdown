@@ -131,3 +131,24 @@ export function trialDay(now: Date = new Date(), kv?: KV | null): number {
   const days = Math.floor((now.getTime() - new Date(trial.startedAt).getTime()) / 86_400_000);
   return Math.max(1, days + 1);
 }
+
+const CheckinSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  sessionId: z.string(),
+  result: z.enum(["worked", "partly", "didnt"]),
+});
+export type Checkin = z.infer<typeof CheckinSchema>;
+const CHECKINS_KEY = `${PREFIX}checkins`;
+const CHECKINS_KEEP = 60;
+
+/** P1 check-ins, oldest first (SPEC 11.1, 14.7). */
+export function loadCheckins(kv?: KV | null): Checkin[] {
+  return read(resolve(kv), CHECKINS_KEY, z.array(CheckinSchema)) ?? [];
+}
+
+/** One check-in per saved plan: a new answer for the same session replaces the old one. */
+export function addCheckin(checkin: Checkin, kv?: KV | null): void {
+  const store = resolve(kv);
+  const rest = loadCheckins(store).filter((c) => c.sessionId !== checkin.sessionId);
+  write(store, CHECKINS_KEY, [...rest, checkin].slice(-CHECKINS_KEEP));
+}

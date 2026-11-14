@@ -12,6 +12,8 @@ const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", weight: [
 export const metadata: Metadata = {
   title: `${copy.brand.name} — ${copy.brand.tagline}`,
   description: copy.landing.subtitle,
+  openGraph: { title: copy.brand.name, description: copy.brand.tagline, siteName: copy.brand.name, type: "website" },
+  twitter: { card: "summary_large_image", title: copy.brand.name, description: copy.brand.tagline },
 };
 
 export const viewport: Viewport = {

@@ -83,9 +83,9 @@ function Debrief({ id }: { id: string }) {
     ...s.turns.map((t) => ({ turn: t.index + 1, mood: t.moodAfter, delta: t.delta, text: t.parentText })),
   ];
 
-  function practiceAgain() {
-    const next = createSession(s.scenario, s.difficulty);
-    track("start_practice", { source: s.scenario.source, ageGroup: s.scenario.ageGroup });
+  function practiceAgain(difficulty: Session["difficulty"]) {
+    const next = createSession(s.scenario, difficulty);
+    track("start_practice", { source: s.scenario.source, ageGroup: s.scenario.ageGroup, difficulty });
     router.push(`/practice/${next.id}`);
   }
 
@@ -151,7 +151,10 @@ function Debrief({ id }: { id: string }) {
           />
 
           <div className="flex flex-wrap gap-2.5">
-            <button className="btn btn-primary btn-lg" type="button" onClick={practiceAgain}>{copy.debrief.again}</button>
+            <button className="btn btn-primary btn-lg" type="button" onClick={() => practiceAgain(s.difficulty)}>{copy.debrief.again}</button>
+            {s.difficulty === "normal" && (
+              <button className="btn btn-secondary btn-lg" type="button" onClick={() => practiceAgain("hard")}>{copy.debrief.harder}</button>
+            )}
             <Link className="btn btn-secondary btn-lg" href="/practice">{copy.debrief.newMoment}</Link>
           </div>
           <Disclaimer variant="short" />
