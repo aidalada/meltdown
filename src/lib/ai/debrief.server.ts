@@ -15,7 +15,7 @@ export async function runDebrief(req: DebriefRequest): Promise<{ result: Debrief
       user: buildDebriefUserMessage(req, turnsToRewrite(req.turns)),
       schema: DEBRIEF_OUTPUT_JSON_SCHEMA,
       maxTokens: 6000,
-      timeoutMs: 20_000,
+      timeoutMs: 12_000,
       maxRetries: 1,
       validate: (raw) => DebriefModelOutputSchema.parse(raw),
     });
