@@ -20,10 +20,14 @@ export function Header() {
         </Link>
         <nav aria-label="Main" className="ml-auto flex flex-wrap items-center justify-end gap-1">
           {offline && <span className="pill pill-accent">{copy.rehearsal.offline}</span>}
-          <Link className="nav-link hidden md:inline-block" href="/progress">{copy.nav.progress}</Link>
-          <Link className="nav-link hidden sm:inline-block" href="/pricing">{copy.nav.pricing}</Link>
-          <Link className="nav-link hidden sm:inline-block" href="/approach">{copy.nav.approach}</Link>
-          <Link className="btn btn-primary min-h-10 px-3 sm:px-[18px]" href="/practice">{copy.nav.start}</Link>
+          {/* Progress stays visible on phones: it is the way to /sos. */}
+          <Link className="nav-link" href="/progress">{copy.nav.progress}</Link>
+          <Link className="nav-link hidden sm:inline-flex" href="/pricing">{copy.nav.pricing}</Link>
+          <Link className="nav-link hidden sm:inline-flex" href="/approach">{copy.nav.approach}</Link>
+          <Link className="btn btn-primary min-h-11 px-3 sm:px-[18px]" href="/practice">
+            <span className="sm:hidden">{copy.nav.startShort}</span>
+            <span className="hidden sm:inline">{copy.nav.start}</span>
+          </Link>
         </nav>
       </div>
     </header>

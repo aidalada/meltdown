@@ -104,7 +104,7 @@ body {
   .logo { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--color-ink); font-family: var(--font-display); font-weight: 800; font-size: 22px; }
   .logo-mark { display: inline-flex; gap: 3px; }
   .logo-mark i { width: 6px; height: 18px; border-radius: 3px; display: block; }
-  .nav-link { color: var(--color-ink); text-decoration: none; font-weight: 500; font-size: 15px; padding: 10px; border-radius: 10px; }
+  .nav-link { display: inline-flex; align-items: center; min-height: 44px; color: var(--color-ink); text-decoration: none; font-weight: 500; font-size: 15px; padding: 10px; border-radius: 10px; }
   .nav-link:hover { background: var(--color-surface); }
 
   /* form controls */

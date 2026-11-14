@@ -1,7 +1,7 @@
 // All UI strings (SPEC appendix A). Wording belongs to C; keys change only with A and C.
 export const copy = {
   brand: { name: "Meltdown", tagline: "Practice the hard moments before they happen." },
-  nav: { pricing: "Pricing", approach: "Our approach", progress: "Progress", start: "Start practicing" },
+  nav: { pricing: "Pricing", approach: "Our approach", progress: "Progress", start: "Start practicing", startShort: "Practice" },
   landing: {
     kicker: "For parents of kids 2–12",
     title: "7:45 pm. Toothbrush. Third meltdown this week.",
