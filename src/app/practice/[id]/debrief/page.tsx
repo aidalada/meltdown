@@ -7,10 +7,11 @@ import { BackupBadge } from "@/components/BackupBadge";
 import { Disclaimer } from "@/components/Disclaimer";
 import { MoodChart, type ChartPoint } from "@/components/MoodChart";
 import { PlanCard } from "@/components/PlanCard";
+import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { RewriteCard } from "@/components/RewriteCard";
 import { PageSkeleton } from "@/components/Skeleton";
 import { TechniqueCard } from "@/components/TechniqueCard";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
@@ -44,10 +45,11 @@ function finalOutcome(s: Session): Exclude<Outcome, "continue"> {
 }
 
 function Debrief({ id }: { id: string }) {
+  const copy = useCopy();
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(() => loadSession(id));
   const [source, setSource] = useState<"ai" | "fallback" | null>(() => loadSession(id)?.debrief?.source ?? null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<"rate_limited" | "failed" | null>(null);
 
   useEffect(() => {
     if (!session || session.debrief || session.turns.length === 0 || inFlight.has(session.id)) return;
@@ -62,7 +64,7 @@ function Debrief({ id }: { id: string }) {
         setSource(from);
         track("debrief_viewed", { source: from });
       })
-      .catch((e: unknown) => setError(e instanceof RateLimitedError ? copy.rehearsal.rateLimited : copy.rehearsal.notFound))
+      .catch((e: unknown) => setError(e instanceof RateLimitedError ? "rate_limited" : "failed"))
       .finally(() => inFlight.delete(s.id));
   }, [session]);
 
@@ -83,9 +85,9 @@ function Debrief({ id }: { id: string }) {
     ...s.turns.map((t) => ({ turn: t.index + 1, mood: t.moodAfter, delta: t.delta, text: t.parentText })),
   ];
 
-  function practiceAgain() {
-    const next = createSession(s.scenario, s.difficulty);
-    track("start_practice", { source: s.scenario.source, ageGroup: s.scenario.ageGroup });
+  function practiceAgain(difficulty: Session["difficulty"]) {
+    const next = createSession(s.scenario, difficulty);
+    track("start_practice", { source: s.scenario.source, ageGroup: s.scenario.ageGroup, difficulty });
     router.push(`/practice/${next.id}`);
   }
 
@@ -98,7 +100,7 @@ function Debrief({ id }: { id: string }) {
 
       {!d ? (
         <div className="card db-section" aria-busy="true">
-          {error ? <p className="form-error" role="alert">{error}</p> : (
+          {error ? <p className="form-error" role="alert">{error === "rate_limited" ? copy.rehearsal.rateLimited : copy.rehearsal.notFound}</p> : (
             <>
               <div className="skeleton" style={{ width: "70%" }} />
               <div className="skeleton" style={{ width: "45%" }} />
@@ -151,8 +153,15 @@ function Debrief({ id }: { id: string }) {
           />
 
           <div className="flex flex-wrap gap-2.5">
-            <button className="btn btn-primary btn-lg" type="button" onClick={practiceAgain}>{copy.debrief.again}</button>
+            <button className="btn btn-primary btn-lg" type="button" onClick={() => practiceAgain(s.difficulty)}>{copy.debrief.again}</button>
+            {s.difficulty === "normal" && (
+              <button className="btn btn-secondary btn-lg" type="button" onClick={() => practiceAgain("hard")}>{copy.debrief.harder}</button>
+            )}
             <Link className="btn btn-secondary btn-lg" href="/practice">{copy.debrief.newMoment}</Link>
+            <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/coach">
+              <SebastianAvatar size={32} decorative />
+              {copy.coach.debriefLink}
+            </Link>
           </div>
           <Disclaimer variant="short" />
         </div>

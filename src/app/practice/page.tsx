@@ -7,16 +7,14 @@ import { MomentForm } from "@/components/MomentForm";
 import { SafetyNotice } from "@/components/SafetyNotice";
 import { ScenarioPicker } from "@/components/ScenarioPicker";
 import { PageSkeleton } from "@/components/Skeleton";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import { postScenario, RateLimitedError } from "@/lib/api-client";
 import { ageGroupOf } from "@/lib/data";
-import { loadProfile, saveProfile } from "@/lib/storage";
+import { DEFAULT_PROFILE, loadProfile, saveProfile } from "@/lib/storage";
 import type { Profile, Scenario } from "@/lib/types";
-
-const DEFAULT_PROFILE: Profile = { version: 1, childName: "Max", ageYears: 4, temperament: "strong-willed", coachHints: true, voiceOn: true };
 
 export default function PracticePage() {
   const hydrated = useHydrated();
@@ -25,6 +23,7 @@ export default function PracticePage() {
 }
 
 function PracticeSetup() {
+  const copy = useCopy();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile>(() => loadProfile() ?? DEFAULT_PROFILE);
   const [touched, setTouched] = useState<Partial<Record<keyof ChildValues, boolean>>>({});

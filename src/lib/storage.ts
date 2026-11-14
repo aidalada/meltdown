@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { SESSIONS_KEEP } from "./constants";
-import { PlanPhraseSchema, ProfileSchema, SessionSchema } from "./schemas";
+import type { CoachMessage } from "@/types/coach";
+import { PlanPhraseSchema, PositiveTagSchema, ProfileSchema, SessionSchema } from "./schemas";
 import type { PlanPhrase, Profile, Session } from "./types";
 
 export interface KV {
@@ -99,6 +100,9 @@ export function listSessions(kv?: KV | null): Session[] {
     .filter((s): s is Session => s !== null);
 }
 
+/** Used until the parent fills in their practice child (SPEC 22 demo child). */
+export const DEFAULT_PROFILE: Profile = { version: 1, childName: "Max", ageYears: 4, temperament: "strong-willed", coachHints: true, voiceOn: true };
+
 export function loadProfile(kv?: KV | null): Profile | null {
   return read(resolve(kv), KEYS.profile, ProfileSchema);
 }
@@ -130,4 +134,64 @@ export function trialDay(now: Date = new Date(), kv?: KV | null): number {
   if (!trial) return 0;
   const days = Math.floor((now.getTime() - new Date(trial.startedAt).getTime()) / 86_400_000);
   return Math.max(1, days + 1);
+}
+
+const CheckinSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  sessionId: z.string(),
+  result: z.enum(["worked", "partly", "didnt"]),
+});
+export type Checkin = z.infer<typeof CheckinSchema>;
+const CHECKINS_KEY = `${PREFIX}checkins`;
+const CHECKINS_KEEP = 60;
+
+/** P1 check-ins, oldest first (SPEC 11.1, 14.7). */
+export function loadCheckins(kv?: KV | null): Checkin[] {
+  return read(resolve(kv), CHECKINS_KEY, z.array(CheckinSchema)) ?? [];
+}
+
+/** One check-in per saved plan: a new answer for the same session replaces the old one. */
+export function addCheckin(checkin: Checkin, kv?: KV | null): void {
+  const store = resolve(kv);
+  const rest = loadCheckins(store).filter((c) => c.sessionId !== checkin.sessionId);
+  write(store, CHECKINS_KEY, [...rest, checkin].slice(-CHECKINS_KEEP));
+}
+
+const COACH_KEY = `${PREFIX}coach`;
+const COACH_KEEP = 40;
+const CoachMessageSchema = z.discriminatedUnion("role", [
+  z.object({ role: z.literal("parent"), at: z.string(), text: z.string() }),
+  z.object({
+    role: z.literal("coach"),
+    at: z.string(),
+    lines: z.array(z.string()),
+    technique: PositiveTagSchema.optional(),
+    rehearse: z.string().optional(),
+    checkin: z.string().optional(),
+    preset: z.string().optional(),
+  }),
+]) satisfies z.ZodType<CoachMessage>;
+
+/** The coach thread, oldest first. Kept in this browser only. */
+export function loadCoachThread(kv?: KV | null): CoachMessage[] {
+  return read(resolve(kv), COACH_KEY, z.array(CoachMessageSchema)) ?? [];
+}
+
+export function saveCoachThread(messages: CoachMessage[], kv?: KV | null): void {
+  write(resolve(kv), COACH_KEY, messages.slice(-COACH_KEEP));
+}
+
+/** "Forget everything": removes every record this app keeps in the browser. */
+export function forgetEverything(kv?: KV | null): void {
+  const store = resolve(kv);
+  if (!store) return;
+  const ids = read(store, KEYS.sessions, IndexSchema) ?? [];
+  const keys = [...ids.map(KEYS.session), KEYS.sessions, KEYS.profile, KEYS.plan, KEYS.trial, CHECKINS_KEY, COACH_KEY];
+  for (const key of keys) {
+    try {
+      store.removeItem(key);
+    } catch {
+      // ignore
+    }
+  }
 }

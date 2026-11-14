@@ -1,7 +1,10 @@
-import { copy } from "@/content/copy";
+"use client";
+
+import { useCopy } from "@/content/i18n";
 import type { Outcome } from "@/lib/types";
 
 export function EndBanner({ outcome, name, turns, onDebrief }: { outcome: Outcome; name: string; turns: number; onDebrief(): void }) {
+  const copy = useCopy();
   const success = outcome === "calm_reached";
   return (
     <div className={`card flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-[18px] ${success ? "border-[#BFE3CE] bg-good-soft" : ""}`}>

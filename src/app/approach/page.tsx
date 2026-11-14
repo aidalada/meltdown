@@ -1,10 +1,15 @@
-import { copy } from "@/content/copy";
+import type { Metadata } from "next";
+import { getTexts } from "@/content/server";
 import { TECHNIQUES } from "@/lib/data";
-import { signed } from "@/components/TagChip";
+import { signed } from "@/lib/format";
 
-export const metadata = { title: `${copy.approach.title} — ${copy.brand.name}` };
+export async function generateMetadata(): Promise<Metadata> {
+  const { copy } = await getTexts();
+  return { title: `${copy.approach.title} — ${copy.brand.name}` };
+}
 
-export default function ApproachPage() {
+export default async function ApproachPage() {
+  const { copy, technique } = await getTexts();
   return (
     <div className="wrap wrap-narrow">
       <div className="pt-7 pb-5"><h1 className="text-[clamp(28px,4.6vw,40px)]">{copy.approach.title}</h1></div>
@@ -17,10 +22,10 @@ export default function ApproachPage() {
         {TECHNIQUES.map((t) => (
           <div key={t.tag} className="card grid gap-1 px-4 py-3.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="font-sans text-base font-semibold">{t.label}</h3>
+              <h3 className="font-sans text-base font-semibold">{technique(t.tag).label}</h3>
               <span className={`tag-chip ${t.weight > 0 ? "tag-chip-pos" : "tag-chip-neg"}`}>{signed(t.weight)}</span>
             </div>
-            <p className="text-[15px] text-muted">{t.why}</p>
+            <p className="text-[15px] text-muted">{technique(t.tag).why}</p>
             <a className="text-[13px]" href={t.source.url} target="_blank" rel="noopener noreferrer">{copy.debrief.source}: {t.source.name}</a>
           </div>
         ))}
