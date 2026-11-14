@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { PageSkeleton } from "@/components/Skeleton";
 import { copy } from "@/content/copy";
 import { useHydrated } from "@/hooks/useHydrated";
@@ -24,7 +26,7 @@ function Sos() {
   }
 
   return (
-    <div className="wrap wrap-narrow grid justify-items-center gap-8 py-10 text-center">
+    <div className="wrap wrap-narrow grid grid-cols-[minmax(0,1fr)] justify-items-center gap-8 py-10 text-center">
       <h1 className="text-[clamp(32px,6vw,52px)]">{copy.sos.title}</h1>
       <div className="breath" aria-hidden="true">
         <div className="breath-circle" />
@@ -40,7 +42,13 @@ function Sos() {
           </div>
         ))}
       </section>
-      <button type="button" className="btn btn-secondary btn-lg" onClick={back}>{copy.sos.back}</button>
+      <div className="flex flex-wrap justify-center gap-2.5">
+        <button type="button" className="btn btn-secondary btn-lg" onClick={back}>{copy.sos.back}</button>
+        <Link className="btn btn-ghost btn-lg h-auto py-2 pl-2 whitespace-normal" href="/coach">
+          <SebastianAvatar size={32} decorative />
+          {copy.coach.sosLink}
+        </Link>
+      </div>
     </div>
   );
 }

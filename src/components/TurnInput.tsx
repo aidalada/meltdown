@@ -5,8 +5,16 @@ import { copy } from "@/content/copy";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { MAX_PARENT_TEXT } from "@/lib/constants";
 
+interface TurnInputProps {
+  disabled: boolean;
+  onSend(text: string): Promise<boolean>;
+  /** Defaults to the rehearsal wording; the coach chat passes its own. */
+  label?: string;
+  placeholder?: string;
+}
+
 /** Text field + mic + Send (SPEC 13.4). onSend resolves false when the text should come back. */
-export function TurnInput({ disabled, onSend }: { disabled: boolean; onSend(text: string): Promise<boolean> }) {
+export function TurnInput({ disabled, onSend, label = copy.rehearsal.inputLabel, placeholder = copy.rehearsal.inputPlaceholder }: TurnInputProps) {
   const [text, setText] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
   const mic = useSpeechRecognition((spoken) => {
@@ -55,13 +63,13 @@ export function TurnInput({ disabled, onSend }: { disabled: boolean; onSend(text
   return (
     <div className="turn-input-wrap">
       <form className="turn-input" onSubmit={onSubmit}>
-        <label htmlFor="turn-text" className="sr-only">{copy.rehearsal.inputLabel}</label>
+        <label htmlFor="turn-text" className="sr-only">{label}</label>
         <textarea
           id="turn-text"
           ref={field}
           rows={1}
           maxLength={MAX_PARENT_TEXT}
-          placeholder={copy.rehearsal.inputPlaceholder}
+          placeholder={placeholder}
           value={shown}
           readOnly={mic.listening}
           onChange={(e) => { setText(e.target.value); grow(); }}

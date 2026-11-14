@@ -7,6 +7,7 @@ import { BackupBadge } from "@/components/BackupBadge";
 import { Disclaimer } from "@/components/Disclaimer";
 import { MoodChart, type ChartPoint } from "@/components/MoodChart";
 import { PlanCard } from "@/components/PlanCard";
+import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { RewriteCard } from "@/components/RewriteCard";
 import { PageSkeleton } from "@/components/Skeleton";
 import { TechniqueCard } from "@/components/TechniqueCard";
@@ -156,6 +157,10 @@ function Debrief({ id }: { id: string }) {
               <button className="btn btn-secondary btn-lg" type="button" onClick={() => practiceAgain("hard")}>{copy.debrief.harder}</button>
             )}
             <Link className="btn btn-secondary btn-lg" href="/practice">{copy.debrief.newMoment}</Link>
+            <Link className="btn btn-ghost btn-lg pl-2" href="/coach">
+              <SebastianAvatar size={32} decorative />
+              {copy.coach.debriefLink}
+            </Link>
           </div>
           <Disclaimer variant="short" />
         </div>

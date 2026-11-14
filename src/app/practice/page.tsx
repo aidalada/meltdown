@@ -13,10 +13,8 @@ import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import { postScenario, RateLimitedError } from "@/lib/api-client";
 import { ageGroupOf } from "@/lib/data";
-import { loadProfile, saveProfile } from "@/lib/storage";
+import { DEFAULT_PROFILE, loadProfile, saveProfile } from "@/lib/storage";
 import type { Profile, Scenario } from "@/lib/types";
-
-const DEFAULT_PROFILE: Profile = { version: 1, childName: "Max", ageYears: 4, temperament: "strong-willed", coachHints: true, voiceOn: true };
 
 export default function PracticePage() {
   const hydrated = useHydrated();

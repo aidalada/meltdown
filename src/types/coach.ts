@@ -1,0 +1,32 @@
+import type { NegativeTag, Outcome, PositiveTag, Temperament } from "@/lib/types";
+
+/** One message in the coach thread. Stored in this browser only. */
+export type CoachMessage =
+  | { role: "parent"; at: string; text: string }
+  | {
+      role: "coach";
+      at: string;
+      lines: string[];
+      /** Technique Sebastian suggests; its source comes from techniques.json. */
+      technique?: PositiveTag;
+      /** The parent's own words, ready to become a rehearsal scenario. */
+      rehearse?: string;
+      /** Session id of the saved plan this message asks about. */
+      checkin?: string;
+    };
+
+/** What Sebastian knows, derived from the browser's own records. Nothing here leaves the device. */
+export interface CoachMemory {
+  child: { name: string; ageYears: number; temperament: Temperament } | null;
+  rehearsals: number;
+  calmReached: number;
+  lastSession: { title: string; outcome: Outcome } | null;
+  plan: { sessionId: string; phrase: string; createdAt: string } | null;
+  planCheckedIn: boolean;
+  /** Most frequent harmful habit across rehearsals, if any. */
+  struggle: NegativeTag | null;
+}
+
+export type CoachReply =
+  | { kind: "safety"; safety: "child_at_risk" | "parent_crisis"; message: CoachMessage }
+  | { kind: "message"; message: CoachMessage };

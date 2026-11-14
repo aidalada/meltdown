@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
 import { copy } from "@/content/copy";
@@ -48,7 +49,13 @@ function CheckinCard() {
           ))}
         </div>
       )}
-      <div><Link className="btn btn-ghost" href="/sos">{copy.progress.sosLink}</Link></div>
+      <div className="flex flex-wrap gap-2">
+        <Link className="btn btn-ghost" href="/sos">{copy.progress.sosLink}</Link>
+        <Link className="btn btn-ghost pl-1.5" href="/coach">
+          <SebastianAvatar size={32} decorative />
+          {copy.coach.cta}
+        </Link>
+      </div>
     </section>
   );
 }
