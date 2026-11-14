@@ -1,4 +1,6 @@
-import { copy } from "@/content/copy";
+"use client";
+
+import { useCopy } from "@/content/i18n";
 
 const SKIN = "#F3CDA9";
 const SKIN_EDGE = "#E2AE86";
@@ -10,6 +12,7 @@ const BEARD = "#7B736C";
  * one cast. Warm accent halo (the child uses mood colors). Pure markup, safe on the server.
  */
 export function SebastianAvatar({ size = 96, decorative = false }: { size?: number; decorative?: boolean }) {
+  const copy = useCopy();
   const a11y = decorative ? { "aria-hidden": true } : { role: "img", "aria-label": `${copy.coach.name}, ${copy.coach.role}` };
   return (
     <span className="avatar inline-flex flex-none" {...a11y}>

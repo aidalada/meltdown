@@ -1,4 +1,6 @@
-import { copy } from "@/content/copy";
+"use client";
+
+import { useCopy } from "@/content/i18n";
 import type { MoodBand } from "@/lib/types";
 
 export const MOOD_COLOR: Record<MoodBand, string> = {
@@ -33,6 +35,7 @@ export interface ChildAvatarProps {
 
 /** 2D practice child (SPEC 13.3). Pure SVG, safe to render on the server. */
 export function ChildAvatar({ band, speaking, thinking, name, size = 220, showName = true, pop = false }: ChildAvatarProps) {
+  const copy = useCopy();
   const dx = thinking ? 3 : 0;
   const dy = thinking ? -4 : 0;
   const [browL, browR] = BROWS[band];

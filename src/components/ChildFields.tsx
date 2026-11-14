@@ -1,16 +1,17 @@
 "use client";
 
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { CHILD_NAMES } from "@/lib/data";
 import type { Temperament } from "@/lib/types";
 
 export interface ChildValues { childName: string; ageYears: number; temperament: Temperament }
 
 const AGES = Array.from({ length: 11 }, (_, i) => i + 2);
-const TEMPERAMENTS = Object.keys(copy.setup.temperaments) as Temperament[];
+const TEMPERAMENTS: Temperament[] = ["strong-willed", "sensitive", "easygoing"];
 
 /** Practice name, age and temperament, shared by both setup tabs (SPEC 14.2). */
 export function ChildFields({ value, onChange }: { value: ChildValues; onChange(field: keyof ChildValues, next: ChildValues): void }) {
+  const copy = useCopy();
   return (
     <div className="card grid gap-3.5 p-4">
       <p className="eyebrow">{copy.setup.childTitle}</p>

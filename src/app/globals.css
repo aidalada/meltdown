@@ -336,13 +336,29 @@ body {
   .bottom-nav a[aria-current="page"] { color: var(--color-primary); }
   .bottom-nav .sos-icon { color: var(--color-bad-text); }
   .bottom-nav-spacer { height: calc(56px + env(safe-area-inset-bottom, 0px)); }
-  @media (min-width: 640px) { .bottom-nav, .bottom-nav-spacer { display: none; } }
-  @media (max-width: 639px) {
+  @media (min-width: 768px) { .bottom-nav, .bottom-nav-spacer { display: none; } }
+  @media (max-width: 767px) {
     body:has(.bottom-nav) .turn-input-wrap { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); padding-bottom: 8px; }
   }
 }
 /* keeps the newest message clear of the sticky input (and the phone tab bar) when the thread scrolls */
 @layer components {
   .thread-end { height: 1px; scroll-margin-bottom: 150px; }
-  @media (max-width: 639px) { .thread-end { scroll-margin-bottom: 210px; } }
+  @media (max-width: 767px) { .thread-end { scroll-margin-bottom: 210px; } }
+}
+/* EN | RU switch */
+@layer components {
+  .lang-switch { display: inline-flex; padding: 2px; border: 1px solid var(--color-line); border-radius: 12px; background: var(--color-surface); }
+  .lang-switch button {
+    min-width: 44px; min-height: 44px; padding: 0 8px; border: 0; border-radius: 10px; background: transparent;
+    font: inherit; font-size: 13px; font-weight: 700; letter-spacing: .04em; color: var(--color-muted); cursor: pointer;
+  }
+  .lang-switch button[aria-pressed="true"] { background: var(--color-primary-soft); color: var(--color-primary); }
+}
+/* Long labels (Russian runs ~30% longer) may wrap instead of pushing the page sideways on 320 px phones. */
+@layer components {
+  .btn-wrap { white-space: normal; height: auto; padding-top: 8px; padding-bottom: 8px; text-align: center; line-height: 1.25; }
+  .bubble-coach .btn { white-space: normal; height: auto; padding-top: 8px; padding-bottom: 8px; text-align: left; line-height: 1.25; }
+  .seg button { white-space: normal; line-height: 1.2; }
+  .hero-chain { grid-template-columns: minmax(0, 1fr); }
 }

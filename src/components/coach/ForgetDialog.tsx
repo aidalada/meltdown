@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 
 /** Confirms "Forget everything". Focus starts on the safe choice; Esc cancels. */
 export function ForgetDialog({ onConfirm, onCancel }: { onConfirm(): void; onCancel(): void }) {
+  const copy = useCopy();
   const keep = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     keep.current?.focus();

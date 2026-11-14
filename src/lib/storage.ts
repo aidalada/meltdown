@@ -168,6 +168,7 @@ const CoachMessageSchema = z.discriminatedUnion("role", [
     technique: PositiveTagSchema.optional(),
     rehearse: z.string().optional(),
     checkin: z.string().optional(),
+    preset: z.string().optional(),
   }),
 ]) satisfies z.ZodType<CoachMessage>;
 

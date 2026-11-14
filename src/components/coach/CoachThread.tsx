@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
-import { copy } from "@/content/copy";
+import { useCopy, useLocale, useTexts } from "@/content/i18n";
 import { TECHNIQUE_BY_TAG } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import type { Checkin } from "@/lib/storage";
@@ -18,17 +18,18 @@ interface CoachThreadProps {
   pendingCheckin: string | null;
   rehearsing: boolean;
   onCheckin(sessionId: string, result: Checkin["result"]): void;
-  onRehearse(text: string): void;
+  onRehearse(text: string, preset?: string): void;
 }
 
-const dayLabel = new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" });
-const CHECKIN_ANSWERS: { result: Checkin["result"]; label: string }[] = [
-  { result: "worked", label: copy.progress.worked },
-  { result: "partly", label: copy.progress.partly },
-  { result: "didnt", label: copy.progress.didnt },
-];
+const DAY_LABEL = {
+  en: new Intl.DateTimeFormat("en-US", { weekday: "long", month: "short", day: "numeric" }),
+  ru: new Intl.DateTimeFormat("ru-RU", { weekday: "long", day: "numeric", month: "long" }),
+};
+const CHECKIN_ANSWERS: Checkin["result"][] = ["worked", "partly", "didnt"];
 
 export function CoachThread({ messages, typing, today, pendingCheckin, rehearsing, onCheckin, onRehearse }: CoachThreadProps) {
+  const copy = useCopy();
+  const locale = useLocale();
   const end = useRef<HTMLLIElement>(null);
   const seen = useRef(messages.length);
   useEffect(() => {
@@ -46,21 +47,21 @@ export function CoachThread({ messages, typing, today, pendingCheckin, rehearsin
         const divider = !prev || localDate(new Date(prev.at)) !== day;
         const lastOfGroup = messages[i + 1]?.role !== "coach";
         return (
-          <DayGroup key={`${m.at}-${i}`} label={divider ? (day === today ? copy.coach.today : dayLabel.format(new Date(m.at))) : null}>
+          <DayGroup key={`${m.at}-${i}`} label={divider ? (day === today ? copy.coach.today : DAY_LABEL[locale].format(new Date(m.at))) : null}>
             {m.role === "parent" ? (
               <li className="msg msg-parent"><div className="bubble bubble-parent">{m.text}</div></li>
             ) : (
               <CoachBubble avatar={lastOfGroup} lines={m.lines}>
                 {m.technique && <TechniqueSource tag={m.technique} />}
                 {m.rehearse && (
-                  <button type="button" className="btn btn-primary justify-self-start" disabled={rehearsing} onClick={() => m.rehearse && onRehearse(m.rehearse)}>
+                  <button type="button" className="btn btn-primary justify-self-start" disabled={rehearsing} onClick={() => m.rehearse && onRehearse(m.rehearse, m.preset)}>
                     {rehearsing ? copy.coach.rehearsing : copy.coach.rehearse}
                   </button>
                 )}
                 {m.checkin && m.checkin === pendingCheckin && (
                   <div className="flex flex-wrap gap-2">
-                    {CHECKIN_ANSWERS.map((a) => (
-                      <button key={a.result} type="button" className="chip-btn" onClick={() => m.checkin && onCheckin(m.checkin, a.result)}>{a.label}</button>
+                    {CHECKIN_ANSWERS.map((result) => (
+                      <button key={result} type="button" className="chip-btn" onClick={() => m.checkin && onCheckin(m.checkin, result)}>{copy.progress[result]}</button>
                     ))}
                   </div>
                 )}
@@ -103,10 +104,11 @@ function CoachBubble({ avatar, lines, children }: { avatar: boolean; lines: stri
 
 /** The suggested technique with its source, straight from techniques.json. */
 function TechniqueSource({ tag }: { tag: PositiveTag }) {
+  const { copy, technique: text } = useTexts();
   const technique = TECHNIQUE_BY_TAG[tag];
   return (
     <div className="technique-note">
-      <span className="font-semibold">{copy.coach.trySource(technique.label)}</span>
+      <span className="font-semibold">{copy.coach.trySource(text(tag).label)}</span>
       <a href={technique.source.url} target="_blank" rel="noopener noreferrer">{copy.coach.source}: {technique.source.name}</a>
     </div>
   );

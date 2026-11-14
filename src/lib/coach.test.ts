@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
+import { textsFor } from "@/content/locale";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
 import { buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "./coach";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
@@ -122,7 +123,7 @@ describe("coachGreeting", () => {
   });
 
   it("welcomes a returning parent back to their last rehearsal", () => {
-    const memory: CoachMemory = { ...EMPTY, lastSession: { title: "Leaving the playground", outcome: "calm_reached" } };
+    const memory: CoachMemory = { ...EMPTY, lastSession: { scenarioId: "leaving-playground", title: "Leaving the playground", outcome: "calm_reached" } };
     expect(coach(coachGreeting(memory, false, NOW)[0]).lines[0]).toBe(copy.coach.greetBack("Leaving the playground"));
   });
 
@@ -170,5 +171,39 @@ describe("reminderIcs", () => {
     expect(ics).toContain("DTSTART:20261115T190000");
     expect(ics.split("\r\n")[0]).toBe("BEGIN:VCALENDAR");
     expect(ics).toContain("URL:https://meltdown-flame.vercel.app/coach");
+  });
+});
+
+describe("Sebastian in Russian", () => {
+  const RU = textsFor("ru");
+
+  it("understands a Russian story and answers in Russian", () => {
+    const m = coach(coachReply("Каждый вечер укладывание превращается в битву. В итоге я угрожаю забрать iPad.", EMPTY, NOW, RU).message);
+    expect(m.lines).toContain(RU.copy.coach.noticedPlain.threat);
+    expect(m.technique).toBe("when_then");
+    expect(m.preset).toBe("teeth-bedtime");
+    expect(m.lines.some((line) => line.includes(RU.technique("when_then").why))).toBe(true);
+  });
+
+  it("catches Russian crisis words, which the English-only safety check would miss", () => {
+    expect(coachReply("Я больше не могу, я не хочу жить.", EMPTY, NOW, RU).kind).toBe("safety");
+    const hit = coachReply("Вчера я ударила его, потому что он не слушался.", EMPTY, NOW, RU);
+    expect(hit.kind === "safety" && hit.safety).toBe("child_at_risk");
+  });
+
+  it("does not raise an alarm when the parent says they did not hit", () => {
+    expect(coachReply("Я очень злилась, но я не ударила его, просто ушла в другую комнату.", EMPTY, NOW, RU).kind).toBe("message");
+  });
+
+  it("translates technique and scenario names for the screen only", () => {
+    expect(RU.technique("threat").label).toBe("Угроза");
+    expect(RU.scenario({ id: "teeth-bedtime", title: "Brushing teeth at bedtime", setting: "Bathroom" }).title).toBe("Чистка зубов перед сном");
+    expect(RU.scenario({ id: "custom-1", title: "A hard moment", setting: "At home" })).toEqual({ title: "Трудный момент", setting: "Дома" });
+    expect(textsFor("en").technique("threat").label).toBe(TECHNIQUE_BY_TAG.threat.label);
+  });
+
+  it("greets in Russian with the translated scenario title", () => {
+    const memory: CoachMemory = { ...EMPTY, lastSession: { scenarioId: "teeth-bedtime", title: "Brushing teeth at bedtime", outcome: "ended_by_parent" } };
+    expect(coach(coachGreeting(memory, false, NOW, RU)[0]).lines[0]).toBe(RU.copy.coach.greetBack("Чистка зубов перед сном"));
   });
 });

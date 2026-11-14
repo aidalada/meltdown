@@ -2,16 +2,19 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { copy } from "@/content/copy";
+import { useTexts } from "@/content/i18n";
+import type { Texts } from "@/content/locale";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import { postScenario, RateLimitedError } from "@/lib/api-client";
 import { buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "@/lib/coach";
+import { ageGroupOf, PRESETS } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import {
   addCheckin, DEFAULT_PROFILE, forgetEverything, listSessions, loadCheckins, loadCoachThread, loadPlan, loadProfile,
   saveCoachThread, type Checkin,
 } from "@/lib/storage";
+import type { Scenario } from "@/lib/types";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
 
 const DAY_MS = 86_400_000;
@@ -29,20 +32,25 @@ function clock(): Date {
 }
 
 /** Today's thread: yesterday's messages stay, and a new day starts with a fresh greeting. */
-function openThread(memory: CoachMemory, now: Date): CoachMessage[] {
+function openThread(memory: CoachMemory, now: Date, texts: Texts): CoachMessage[] {
   const stored = loadCoachThread();
   const last = stored.at(-1);
   if (last && localDate(new Date(last.at)) === localDate(now)) return stored;
-  return [...stored, ...coachGreeting(memory, stored.length === 0, now)];
+  return [...stored, ...coachGreeting(memory, stored.length === 0, now, texts)];
 }
 
 const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
 
-/** Sebastian's chat. Mount only after useHydrated(): the initial state reads localStorage. */
+/**
+ * Sebastian's chat. Mount only after useHydrated(): the initial state reads localStorage.
+ * Remount it when the language changes, so the greeting is rebuilt in that language.
+ */
 export function useCoach() {
+  const texts = useTexts();
+  const { copy } = texts;
   const router = useRouter();
   const [memory, setMemory] = useState<CoachMemory>(readMemory);
-  const [messages, setMessages] = useState<CoachMessage[]>(() => openThread(memory, clock()));
+  const [messages, setMessages] = useState<CoachMessage[]>(() => openThread(memory, clock(), texts));
   const [today] = useState(() => localDate(clock()));
   const [typing, setTyping] = useState(false);
   const [rehearsing, setRehearsing] = useState(false);
@@ -60,7 +68,7 @@ export function useCoach() {
     commit(withParent);
     setTyping(true);
     await wait(REPLY_DELAY_MS);
-    const reply = coachReply(text, memory, clock());
+    const reply = coachReply(text, memory, clock(), texts);
     commit([...withParent, reply.message]);
     setTyping(false);
     if (reply.kind === "safety") {
@@ -75,23 +83,39 @@ export function useCoach() {
     addCheckin({ date: localDate(now), sessionId, result });
     track("checkin", { result });
     setMemory(readMemory());
-    const label = { worked: copy.progress.worked, partly: copy.progress.partly, didnt: copy.progress.didnt }[result];
-    commit([...messages, { role: "parent", at: now.toISOString(), text: label }, checkinReply(result, now)]);
+    commit([...messages, { role: "parent", at: now.toISOString(), text: copy.progress[result] }, checkinReply(result, now, texts)]);
   }
 
-  async function rehearse(text: string) {
+  function begin(scenario: Scenario) {
+    const session = createSession(scenario);
+    track("start_practice", {
+      source: scenario.source,
+      ageGroup: scenario.ageGroup,
+      ...(scenario.source === "preset" ? { scenarioId: scenario.id } : {}),
+    });
+    router.push(`/practice/${session.id}`);
+  }
+
+  /**
+   * English: the parent's own words become a custom scenario (AI on prod, heuristics offline).
+   * Russian: the practice child speaks English, so Sebastian starts the matching preset instead.
+   */
+  async function rehearse(text: string, presetId?: string) {
     if (rehearsing) return;
     setRehearsing(true);
     const profile = loadProfile() ?? DEFAULT_PROFILE;
+    const preset = texts.locale === "ru" ? PRESETS.find((p) => p.id === presetId) : undefined;
+    if (preset) {
+      begin({ ...preset, childName: profile.childName, ageYears: profile.ageYears, ageGroup: ageGroupOf(profile.ageYears), temperament: profile.temperament });
+      return;
+    }
     try {
       const { result, source } = await postScenario({
         text, childName: profile.childName, ageYears: profile.ageYears, temperament: profile.temperament,
       });
       track("scenario_result", { kind: result.kind, source });
       if (result.kind === "ok") {
-        const session = createSession(result.scenario);
-        track("start_practice", { source: "custom", ageGroup: result.scenario.ageGroup });
-        router.push(`/practice/${session.id}`);
+        begin(result.scenario);
         return;
       }
       if (result.kind === "safety") {
@@ -108,7 +132,7 @@ export function useCoach() {
   }
 
   function remind() {
-    const file = new Blob([reminderIcs(`${window.location.origin}/coach`, new Date())], { type: "text/calendar" });
+    const file = new Blob([reminderIcs(`${window.location.origin}/coach`, new Date(), texts)], { type: "text/calendar" });
     const url = URL.createObjectURL(file);
     const link = document.createElement("a");
     link.href = url;
@@ -122,7 +146,7 @@ export function useCoach() {
     forgetEverything();
     const fresh = readMemory();
     setMemory(fresh);
-    setMessages(coachGreeting(fresh, true, clock()));
+    setMessages(coachGreeting(fresh, true, clock(), texts));
     setReminded(false);
   }
 

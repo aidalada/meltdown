@@ -3,7 +3,7 @@ export const copy = {
   brand: { name: "Meltdown", tagline: "Practice the hard moments before they happen." },
   nav: {
     pricing: "Pricing", approach: "Our approach", progress: "Progress", start: "Start practicing", startShort: "Practice",
-    coach: "Sebastian", sos: "SOS", label: "Main", tabs: "Sections",
+    coach: "Sebastian", sos: "SOS", label: "Main", tabs: "Sections", language: "Language", coachCta: "Talk to Sebastian",
   },
   landing: {
     kicker: "For parents of kids 2–12",

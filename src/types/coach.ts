@@ -13,6 +13,8 @@ export type CoachMessage =
       rehearse?: string;
       /** Session id of the saved plan this message asks about. */
       checkin?: string;
+      /** Preset matching the moment, used to start a rehearsal without the API (Russian input). */
+      preset?: string;
     };
 
 /** What Sebastian knows, derived from the browser's own records. Nothing here leaves the device. */
@@ -20,7 +22,7 @@ export interface CoachMemory {
   child: { name: string; ageYears: number; temperament: Temperament } | null;
   rehearsals: number;
   calmReached: number;
-  lastSession: { title: string; outcome: Outcome } | null;
+  lastSession: { scenarioId: string; title: string; outcome: Outcome } | null;
   plan: { sessionId: string; phrase: string; createdAt: string } | null;
   planCheckedIn: boolean;
   /** Most frequent harmful habit across rehearsals, if any. */

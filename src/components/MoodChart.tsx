@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { bandOf, clamp } from "@/lib/engine/mood";
 import type { MoodBand } from "@/lib/types";
 import { MOOD_COLOR } from "./ChildAvatar";
@@ -17,6 +17,7 @@ const TEXT = { fontSize: 12, fontFamily: "var(--font-sans)" } as const;
 
 /** SVG calm chart (SPEC 13.5). Width follows the container (300–600) so labels stay 12 px on phones. */
 export function MoodChart({ points }: { points: ChartPoint[] }) {
+  const copy = useCopy();
   const box = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(600);
 

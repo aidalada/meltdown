@@ -5,9 +5,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { PageSkeleton } from "@/components/Skeleton";
-import { copy } from "@/content/copy";
+import { useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
-import { PRESETS, TECHNIQUE_BY_TAG } from "@/lib/data";
+import { PRESETS } from "@/lib/data";
 import { loadPlan } from "@/lib/storage";
 
 export default function SosPage() {
@@ -17,6 +17,7 @@ export default function SosPage() {
 }
 
 function Sos() {
+  const { copy, technique } = useTexts();
   const router = useRouter();
   const [phrases] = useState(() => loadPlan()?.phrases ?? PRESETS.find((p) => p.id === "teeth-bedtime")?.planPhrases ?? []);
 
@@ -38,13 +39,13 @@ function Sos() {
         {phrases.map((p) => (
           <div key={p.phrase} className="card grid gap-1 px-5 py-4 text-left">
             <span className="font-display text-xl leading-snug font-extrabold">“{p.phrase}”</span>
-            <span className="text-[13px] text-muted">{TECHNIQUE_BY_TAG[p.technique].label}</span>
+            <span className="text-[13px] text-muted">{technique(p.technique).label}</span>
           </div>
         ))}
       </section>
       <div className="flex flex-wrap justify-center gap-2.5">
         <button type="button" className="btn btn-secondary btn-lg" onClick={back}>{copy.sos.back}</button>
-        <Link className="btn btn-ghost btn-lg h-auto py-2 pl-2 whitespace-normal" href="/coach">
+        <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/coach">
           <SebastianAvatar size={32} decorative />
           {copy.coach.sosLink}
         </Link>

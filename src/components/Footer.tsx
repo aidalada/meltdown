@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 
 export function Footer() {
+  const copy = useCopy();
   return (
     <footer className="mt-14 border-t border-line">
       <div className="wrap flex flex-wrap items-center gap-x-6 gap-y-3 py-6 pb-8 text-sm text-muted">

@@ -4,7 +4,7 @@ import { MoodMeter } from "@/components/MoodMeter";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { TagChip } from "@/components/TagChip";
 import { TrackView } from "@/components/TrackView";
-import { copy } from "@/content/copy";
+import { getTexts } from "@/content/server";
 import type { TechniqueTag } from "@/lib/types";
 
 const MOVES: [TechniqueTag, number][] = [
@@ -13,7 +13,8 @@ const MOVES: [TechniqueTag, number][] = [
 /** Dot colors follow the loop: Sebastian (accent), practice (primary), the meltdown, the calm morning. */
 const DAY_DOTS = ["var(--color-accent)", "var(--color-primary)", "var(--color-mood-meltdown)", "var(--color-mood-calm)"];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { copy } = await getTexts();
   return (
     <div className="wrap">
       <TrackView event="landing_view" />

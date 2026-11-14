@@ -7,17 +7,20 @@ import { ForgetDialog } from "@/components/coach/ForgetDialog";
 import { SafetyNotice } from "@/components/SafetyNotice";
 import { PageSkeleton } from "@/components/Skeleton";
 import { TurnInput } from "@/components/TurnInput";
-import { copy } from "@/content/copy";
+import { useCopy, useLocale } from "@/content/i18n";
 import { useCoach } from "@/hooks/useCoach";
 import { useHydrated } from "@/hooks/useHydrated";
 
 export default function CoachPage() {
   const hydrated = useHydrated();
+  const locale = useLocale();
   if (!hydrated) return <PageSkeleton />;
-  return <Coach />;
+  // A new language rebuilds Sebastian's greeting in that language.
+  return <Coach key={locale} />;
 }
 
 function Coach() {
+  const copy = useCopy();
   const coach = useCoach();
   const [confirmForget, setConfirmForget] = useState(false);
   const started = coach.messages.some((m) => m.role === "parent");
@@ -34,7 +37,7 @@ function Coach() {
           pendingCheckin={coach.pendingCheckin}
           rehearsing={coach.rehearsing}
           onCheckin={coach.checkin}
-          onRehearse={(text) => void coach.rehearse(text)}
+          onRehearse={(text, preset) => void coach.rehearse(text, preset)}
         />
         {!started && !coach.typing && (
           <div className="grid gap-2 pb-2">

@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { copy } from "@/content/copy";
-import { TECHNIQUE_BY_TAG } from "@/lib/data";
+import { useTexts } from "@/content/i18n";
 import type { PlanPhrase } from "@/lib/types";
 
 export function PlanCard({ phrases, onCopy, onSave }: { phrases: PlanPhrase[]; onCopy(): void; onSave(): void }) {
+  const { copy, technique } = useTexts();
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const list = useRef<HTMLOListElement>(null);
@@ -40,7 +40,7 @@ export function PlanCard({ phrases, onCopy, onSave }: { phrases: PlanPhrase[]; o
         {phrases.map((p) => (
           <li key={p.phrase} className="plan-item">
             <span className="plan-phrase">“{p.phrase}”</span>
-            <span className="text-[13px] text-[#B9C2E0]">{TECHNIQUE_BY_TAG[p.technique].label}</span>
+            <span className="text-[13px] text-[#B9C2E0]">{technique(p.technique).label}</span>
           </li>
         ))}
       </ol>

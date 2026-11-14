@@ -5,17 +5,23 @@ import { BottomNav } from "@/components/BottomNav";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { copy } from "@/content/copy";
+import { LocaleProvider } from "@/content/i18n";
+import { getLocale, getTexts } from "@/content/server";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const nunito = Nunito({ subsets: ["latin"], variable: "--font-nunito", weight: ["600", "800"] });
 
-export const metadata: Metadata = {
-  title: `${copy.brand.name} — ${copy.brand.tagline}`,
-  description: copy.landing.subtitle,
-  openGraph: { title: copy.brand.name, description: copy.brand.tagline, siteName: copy.brand.name, type: "website" },
-  twitter: { card: "summary_large_image", title: copy.brand.name, description: copy.brand.tagline },
-};
+/** Tab title and description follow the interface language; share cards stay English (US product). */
+export async function generateMetadata(): Promise<Metadata> {
+  const { copy: local } = await getTexts();
+  return {
+    title: `${local.brand.name} — ${local.brand.tagline}`,
+    description: local.landing.subtitle,
+    openGraph: { title: copy.brand.name, description: copy.brand.tagline, siteName: copy.brand.name, type: "website" },
+    twitter: { card: "summary_large_image", title: copy.brand.name, description: copy.brand.tagline },
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -24,14 +30,17 @@ export const viewport: Viewport = {
   themeColor: "#F6F7FB",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
   return (
-    <html lang="en" className={`${inter.variable} ${nunito.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${nunito.variable}`}>
       <body>
-        <Header />
-        <main>{children}</main>
-        <Footer />
-        <BottomNav />
+        <LocaleProvider locale={locale}>
+          <Header />
+          <main>{children}</main>
+          <Footer />
+          <BottomNav />
+        </LocaleProvider>
         <Analytics />
       </body>
     </html>

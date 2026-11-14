@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import type { CoachMemory } from "@/types/coach";
 
 interface CoachPanelProps {
@@ -14,6 +14,7 @@ interface CoachPanelProps {
 
 /** Who Sebastian is and what he remembers. A sidebar on desktop, a collapsible header on phones. */
 export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelProps) {
+  const copy = useCopy();
   const [open, setOpen] = useState(false);
   const { child, plan, struggle } = memory;
   const knowsNothing = !child && memory.rehearsals === 0;
@@ -46,7 +47,7 @@ export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelP
             </div>
             <dl className="memory-list">
               {child && (
-                <div><dt>{copy.coach.memoryChild}</dt><dd>{copy.coach.memoryChildValue(child.name, child.ageYears, child.temperament)}</dd></div>
+                <div><dt>{copy.coach.memoryChild}</dt><dd>{copy.coach.memoryChildValue(child.name, child.ageYears, copy.setup.temperaments[child.temperament])}</dd></div>
               )}
               {plan && <div><dt>{copy.coach.memoryPlan}</dt><dd>“{plan.phrase}”</dd></div>}
               {struggle && <div><dt>{copy.coach.memoryWorkingOn}</dt><dd>{copy.coach.workingOn[struggle]}</dd></div>}

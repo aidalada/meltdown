@@ -2,7 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { TrackView } from "@/components/TrackView";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { track } from "@/lib/analytics";
 import { first30Stats } from "@/lib/progress";
@@ -24,6 +24,7 @@ const readSuccess = () => new URLSearchParams(window.location.search).get("statu
 type Plan = "monthly" | "yearly";
 
 function First30() {
+  const copy = useCopy();
   const [stats] = useState(() => first30Stats(listSessions()));
   if (stats.rehearsals === 0) return null;
   return (
@@ -44,7 +45,8 @@ function First30() {
 }
 
 function BuyButton({ plan, primary, onWaitlist }: { plan: Plan; primary: boolean; onWaitlist(): void }) {
-  const className = `btn btn-lg ${primary ? "btn-primary" : "btn-secondary"}`;
+  const copy = useCopy();
+  const className = `btn btn-lg btn-wrap ${primary ? "btn-primary" : "btn-secondary"}`;
   // Without a Stripe link the button only joins the waitlist, so it must say so (SPEC 14.5).
   const label = LINKS[plan] ? copy.pricing[plan].cta : copy.pricing.waitlistCta;
   if (LINKS[plan]) {
@@ -62,6 +64,7 @@ function BuyButton({ plan, primary, onWaitlist }: { plan: Plan; primary: boolean
 }
 
 export default function PricingPage() {
+  const copy = useCopy();
   const day = useSyncExternalStore(subscribe, readTrialDay, () => 0);
   const success = useSyncExternalStore(subscribe, readSuccess, () => false);
   const [thanks, setThanks] = useState(false);

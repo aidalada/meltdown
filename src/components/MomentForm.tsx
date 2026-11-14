@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { MAX_SCENARIO_TEXT } from "@/lib/constants";
 
 /** "Today's moment" free text (SPEC 14.2). Child fields live in ChildFields. */
 export function MomentForm({ busy, error, onSubmit }: { busy: boolean; error: string | null; onSubmit(text: string): void }) {
+  const copy = useCopy();
   const [text, setText] = useState("");
   const [tooShort, setTooShort] = useState(false);
 

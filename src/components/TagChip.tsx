@@ -1,19 +1,19 @@
+"use client";
+
+import { useTexts } from "@/content/i18n";
 import { TECHNIQUE_BY_TAG } from "@/lib/data";
+import { signed } from "@/lib/format";
 import type { TechniqueTag } from "@/lib/types";
 
-export function signed(n: number): string {
-  if (n > 0) return `+${n}`;
-  if (n < 0) return `−${Math.abs(n)}`;
-  return "0";
-}
+export { signed };
 
 export function TagChip({ tag, applied }: { tag: TechniqueTag; applied: number }) {
-  const technique = TECHNIQUE_BY_TAG[tag];
-  const positive = technique.polarity === "positive";
+  const { technique: text } = useTexts();
+  const positive = TECHNIQUE_BY_TAG[tag].polarity === "positive";
   return (
     <span className={`tag-chip ${positive ? "tag-chip-pos" : "tag-chip-neg"}`}>
       <span className="dot" aria-hidden="true" />
-      {technique.label} {signed(applied)}
+      {text(tag).label} {signed(applied)}
     </span>
   );
 }

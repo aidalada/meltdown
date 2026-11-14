@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { MAX_PARENT_TEXT } from "@/lib/constants";
 
@@ -14,7 +14,8 @@ interface TurnInputProps {
 }
 
 /** Text field + mic + Send (SPEC 13.4). onSend resolves false when the text should come back. */
-export function TurnInput({ disabled, onSend, label = copy.rehearsal.inputLabel, placeholder = copy.rehearsal.inputPlaceholder }: TurnInputProps) {
+export function TurnInput({ disabled, onSend, label, placeholder }: TurnInputProps) {
+  const copy = useCopy();
   const [text, setText] = useState("");
   const field = useRef<HTMLTextAreaElement>(null);
   const mic = useSpeechRecognition((spoken) => {
@@ -63,13 +64,13 @@ export function TurnInput({ disabled, onSend, label = copy.rehearsal.inputLabel,
   return (
     <div className="turn-input-wrap">
       <form className="turn-input" onSubmit={onSubmit}>
-        <label htmlFor="turn-text" className="sr-only">{label}</label>
+        <label htmlFor="turn-text" className="sr-only">{label ?? copy.rehearsal.inputLabel}</label>
         <textarea
           id="turn-text"
           ref={field}
           rows={1}
           maxLength={MAX_PARENT_TEXT}
-          placeholder={placeholder}
+          placeholder={placeholder ?? copy.rehearsal.inputPlaceholder}
           value={shown}
           readOnly={mic.listening}
           onChange={(e) => { setText(e.target.value); grow(); }}

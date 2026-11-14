@@ -4,7 +4,7 @@ import Link from "next/link";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useState } from "react";
 import { PageSkeleton } from "@/components/Skeleton";
-import { copy } from "@/content/copy";
+import { useCopy, useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { track } from "@/lib/analytics";
 import { localDate, streakDays } from "@/lib/progress";
@@ -21,6 +21,7 @@ type Result = Checkin["result"];
 const RESULTS: Result[] = ["worked", "partly", "didnt"];
 
 function CheckinCard() {
+  const copy = useCopy();
   const [plan] = useState(() => loadPlan());
   const [answered, setAnswered] = useState<Result | null>(() =>
     plan ? loadCheckins().find((c) => c.sessionId === plan.sessionId)?.result ?? null : null,
@@ -51,9 +52,9 @@ function CheckinCard() {
       )}
       <div className="flex flex-wrap gap-2">
         <Link className="btn btn-ghost" href="/sos">{copy.progress.sosLink}</Link>
-        <Link className="btn btn-ghost pl-1.5" href="/coach">
+        <Link className="btn btn-ghost btn-wrap pl-1.5" href="/coach">
           <SebastianAvatar size={32} decorative />
-          {copy.coach.cta}
+          {copy.nav.coachCta}
         </Link>
       </div>
     </section>
@@ -61,19 +62,20 @@ function CheckinCard() {
 }
 
 function SessionRow({ s }: { s: Session }) {
+  const { copy, locale, scenario: sceneText } = useTexts();
   const ended = s.status === "ended";
   const end = s.turns.length ? s.turns[s.turns.length - 1].moodAfter : s.startMood;
-  const date = new Date(s.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  const date = new Date(s.createdAt).toLocaleDateString(locale === "ru" ? "ru-RU" : "en-US", { month: "short", day: "numeric" });
   return (
     <li className="card flex flex-wrap items-center justify-between gap-3 px-4 py-3">
       <div className="min-w-0">
-        <p className="font-semibold">{s.scenario.title}</p>
+        <p className="font-semibold">{sceneText(s.scenario).title}</p>
         <p className="text-sm text-muted">
           {date} · {s.scenario.childName} · {s.startMood} → {end}
           {s.difficulty === "hard" ? ` · ${copy.rehearsal.hard}` : ""}
         </p>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {ended && s.outcome !== "continue" && (
           <span className={`pill ${s.outcome === "calm_reached" ? "pill-good" : ""}`}>{copy.debrief.outcomes[s.outcome]}</span>
         )}
@@ -86,6 +88,7 @@ function SessionRow({ s }: { s: Session }) {
 }
 
 function Progress() {
+  const copy = useCopy();
   const [sessions] = useState(() => listSessions().filter((s) => s.turns.length > 0));
   const [streak] = useState(() => streakDays(sessions, new Date()));
 

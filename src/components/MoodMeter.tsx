@@ -1,4 +1,6 @@
-import { copy } from "@/content/copy";
+"use client";
+
+import { useCopy } from "@/content/i18n";
 import { bandOf } from "@/lib/engine/mood";
 import type { MoodBand } from "@/lib/types";
 import { MOOD_COLOR } from "./ChildAvatar";
@@ -11,6 +13,7 @@ const ZONES: [MoodBand, number][] = [["meltdown", 20.5], ["upset", 20], ["grumpy
  * count) so the delta chip re-mounts and replays its animation on every new turn.
  */
 export function MoodMeter({ value, delta, deltaKey }: { value: number; delta: number | null; deltaKey?: number }) {
+  const copy = useCopy();
   const label = copy.rehearsal.calmLevel(value, copy.bands[bandOf(value)]);
   const tone = delta === null ? "" : delta > 0 ? "delta-up" : delta < 0 ? "delta-down" : "delta-flat";
   return (

@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ChildAvatar } from "@/components/ChildAvatar";
-import { copy } from "@/content/copy";
+import { getTexts } from "@/content/server";
 
-export default function NotFound() {
+export default async function NotFound() {
+  const { copy } = await getTexts();
   return (
     <div className="wrap wrap-narrow grid justify-items-center gap-4 py-16 text-center">
       <ChildAvatar band="grumpy" speaking={false} thinking={false} name="Max" size={140} showName={false} />

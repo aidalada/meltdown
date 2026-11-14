@@ -11,7 +11,7 @@ import { SafetyNotice } from "@/components/SafetyNotice";
 import { PageSkeleton } from "@/components/Skeleton";
 import { Transcript, type TranscriptItem } from "@/components/Transcript";
 import { TurnInput } from "@/components/TurnInput";
-import { copy } from "@/content/copy";
+import { useCopy, useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { useSession } from "@/hooks/useSession";
 import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
@@ -30,6 +30,7 @@ export default function RehearsalPage() {
 }
 
 function ThinkingNote({ name }: { name: string }) {
+  const copy = useCopy();
   const [show, setShow] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setShow(true), 6000);
@@ -48,6 +49,7 @@ function Switch({ checked, label, onToggle }: { checked: boolean; label: string;
 }
 
 function Rehearsal({ id }: { id: string }) {
+  const { copy, scenario: sceneText } = useTexts();
   const router = useRouter();
   const voice = useSpeechSynthesis();
   const [profile, setProfile] = useState<Profile>(() => loadProfile() ?? DEFAULT_PROFILE);
@@ -116,8 +118,8 @@ function Rehearsal({ id }: { id: string }) {
     <div className="wrap">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
         <div className="min-w-0 flex-[1_1_260px]">
-          <h1 className="text-[22px]">{s.scenario.title}</h1>
-          <p className="text-sm text-muted">{s.scenario.childName}, {s.scenario.ageYears} · {s.scenario.setting}</p>
+          <h1 className="text-[22px]">{sceneText(s.scenario).title}</h1>
+          <p className="text-sm text-muted">{s.scenario.childName}, {s.scenario.ageYears} · {sceneText(s.scenario).setting}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="pill">{copy.rehearsal.turnOf(turnNumber, MAX_TURNS)}</span>
@@ -154,8 +156,8 @@ function Rehearsal({ id }: { id: string }) {
           <div className="overlay">
             <div className="card m-4 grid max-w-[360px] justify-items-center gap-3 p-6 text-center">
               <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} size={120} showName={false} />
-              <h2 className="text-[22px]">{s.scenario.title}</h2>
-              <p className="text-[15px] text-muted">{s.scenario.setting}</p>
+              <h2 className="text-[22px]">{sceneText(s.scenario).title}</h2>
+              <p className="text-[15px] text-muted">{sceneText(s.scenario).setting}</p>
               <button className="btn btn-primary btn-lg" type="button" onClick={start} autoFocus>{copy.rehearsal.startOverlay}</button>
             </div>
           </div>

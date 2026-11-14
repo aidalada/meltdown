@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import type { AppliedTag } from "@/lib/types";
 import { TagChip } from "./TagChip";
 
@@ -11,6 +11,7 @@ export type TranscriptItem =
   | { role: "thinking"; name: string };
 
 export function Transcript({ items, showHints }: { items: TranscriptItem[]; showHints: boolean }) {
+  const copy = useCopy();
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (items.length > 1) end.current?.previousElementSibling?.scrollIntoView({ block: "nearest", behavior: "smooth" });

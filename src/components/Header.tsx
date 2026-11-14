@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 import { useOffline } from "@/hooks/useOffline";
 import { MOOD_COLOR } from "./ChildAvatar";
+import { LanguageSwitch } from "./LanguageSwitch";
 import { SebastianAvatar } from "./SebastianAvatar";
 
 export function Header() {
+  const copy = useCopy();
   const offline = useOffline();
   return (
     <header>
@@ -19,16 +21,17 @@ export function Header() {
           </span>
           {copy.brand.name}
         </Link>
-        {/* Below 640 px the BottomNav tab bar carries navigation, so the header keeps only the logo. */}
+        {/* Below 768 px the BottomNav tab bar carries navigation, so the header keeps the logo and language. */}
         <nav aria-label={copy.nav.label} className="ml-auto flex flex-wrap items-center justify-end gap-1">
           {offline && <span className="pill pill-accent">{copy.rehearsal.offline}</span>}
-          <Link className="nav-link hidden sm:inline-flex" href="/practice">{copy.nav.startShort}</Link>
-          <Link className="nav-link hidden sm:inline-flex" href="/progress">{copy.nav.progress}</Link>
-          <Link className="nav-link hidden md:inline-flex" href="/pricing">{copy.nav.pricing}</Link>
-          <Link className="nav-link hidden md:inline-flex" href="/approach">{copy.nav.approach}</Link>
-          <Link className="btn btn-primary hidden min-h-11 pr-[18px] pl-1.5 sm:inline-flex" href="/coach">
+          <Link className="nav-link hidden md:inline-flex" href="/practice">{copy.nav.startShort}</Link>
+          <Link className="nav-link hidden md:inline-flex" href="/progress">{copy.nav.progress}</Link>
+          <Link className="nav-link hidden lg:inline-flex" href="/pricing">{copy.nav.pricing}</Link>
+          <Link className="nav-link hidden lg:inline-flex" href="/approach">{copy.nav.approach}</Link>
+          <LanguageSwitch />
+          <Link className="btn btn-primary hidden min-h-11 pr-[18px] pl-1.5 md:inline-flex" href="/coach">
             <SebastianAvatar size={32} decorative />
-            {copy.coach.cta}
+            {copy.nav.coachCta}
           </Link>
         </nav>
       </div>

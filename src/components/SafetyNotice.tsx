@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { copy } from "@/content/copy";
+import { useCopy } from "@/content/i18n";
 
 const NUMBERS = {
   child_at_risk: [
-    { label: copy.safety.call911, number: "911", href: "tel:911" },
-    { label: copy.safety.callChildhelp, number: "1-800-422-4453", href: "tel:18004224453" },
+    { label: "call911", number: "911", href: "tel:911" },
+    { label: "callChildhelp", number: "1-800-422-4453", href: "tel:18004224453" },
   ],
-  parent_crisis: [{ label: copy.safety.call988, number: "988", href: "tel:988" }],
+  parent_crisis: [{ label: "call988", number: "988", href: "tel:988" }],
 } as const;
 
 export function SafetyNotice({ kind, onContinue }: { kind: "child_at_risk" | "parent_crisis"; onContinue(): void }) {
+  const copy = useCopy();
   const back = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     back.current?.focus();
@@ -28,7 +29,7 @@ export function SafetyNotice({ kind, onContinue }: { kind: "child_at_risk" | "pa
         <div className="grid gap-2">
           {NUMBERS[kind].map((n) => (
             <a key={n.href} className="phone-link" href={n.href}>
-              {n.label}
+              {copy.safety[n.label]}
               <span>{n.number}</span>
             </a>
           ))}
