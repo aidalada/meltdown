@@ -61,7 +61,11 @@ const CoachApiReplySchema = z.object({
 const PATH = "/api/coach";
 const TIMEOUT_MS = 8000;
 const HISTORY_ITEMS = 6;
-/** Set when the route answers 404 or 405, so a missing route is asked only once per page load. */
+/**
+ * Set when the route turns out not to exist, so it is asked only once per page load.
+ * A missing route answers 404 or 405 locally, but on Vercel a POST to an unknown path returns
+ * 200 with the HTML "not found" page, so anything that is not JSON counts as missing too.
+ */
 let missing = false;
 
 function isOffline(): boolean {
@@ -99,8 +103,9 @@ export async function askCoach(request: CoachApiRequest): Promise<CoachApiReply 
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request), signal: controller.signal,
     });
-    if (response.status === 404 || response.status === 405) missing = true;
-    if (response.status !== 200) return null;
+    const json = response.headers.get("content-type")?.includes("application/json") ?? false;
+    if (response.status === 404 || response.status === 405 || (response.ok && !json)) missing = true;
+    if (response.status !== 200 || !json) return null;
     const parsed = ApiResponseSchema(CoachApiReplySchema).safeParse(await response.json());
     return parsed.success && parsed.data.ok ? parsed.data.data : null;
   } catch {
