@@ -1,6 +1,6 @@
 # MELTDOWN — техническое задание (SPEC)
 
-**Версия:** 1.1 · **Статус:** утверждено к разработке · **Срок:** 16 рабочих часов (T+0 … T+16)
+**Версия:** 1.2 · **Статус:** утверждено к разработке · **Срок:** 16 рабочих часов (T+0 … T+16)
 
 **Команда:**
 
@@ -655,7 +655,7 @@ export function applyTurn(input: ApplyTurnInput): ApplyTurnOutput {
 | Формат ответа | Structured outputs: `output_config.format = { type: "json_schema", schema }` | Плюс проверка zod в коде |
 | Отказ модели | `fallbacks: "default"` + beta `server-side-fallback-2026-07-01` | Включено намеренно: если фильтр безопасности ошибочно откажет, API сам повторит запрос на другой модели. Только для `claude-opus-5-5` |
 | `max_tokens` | turn 4000 · scenario 3000 · debrief 6000 | Лимит включает невидимое мышление, запас обязателен |
-| Таймаут | turn и scenario 12 с · debrief 20 с; `maxRetries: 1` | Меньше `maxDuration = 30` у роутов |
+| Таймаут и повторы SDK | turn: 12 с, `maxRetries: 0` · scenario: 12 с, `maxRetries: 1` · debrief: 20 с, `maxRetries: 1` | Таймаут задан на попытку. В turn первая ошибка сразу включает запасной режим. Общий лимит роута — `maxDuration = 30` |
 | Префилл ассистента | **не использовать** | Возвращает 400 |
 
 **Решение команды о модели.** По умолчанию стоит самая качественная модель. Если на проде ход длится дольше ~4 секунд или растут расходы, можно одной переменной переключиться на `claude-haiku-5-5`: примерно в 40 раз дешевле и быстрее, но качество ниже. Это решение принимает команда (B предлагает по замерам, C фиксирует в журнале). Код уже готов: для моделей кроме `claude-opus-5-5` параметр `fallbacks` не отправляется.
@@ -690,6 +690,7 @@ interface CallJsonOptions<T> {
   schema: Record<string, unknown>;
   maxTokens: number;
   timeoutMs: number;
+  maxRetries?: 0 | 1;
   validate: (raw: unknown) => T; // бросает ошибку, если не прошло zod
 }
 
@@ -706,7 +707,7 @@ export async function callJson<T>(o: CallJsonOptions<T>): Promise<T> {
       format: { type: "json_schema" as const, schema: o.schema },
     },
   };
-  const reqOpts = { timeout: o.timeoutMs, maxRetries: 1 };
+  const reqOpts = { timeout: o.timeoutMs, maxRetries: o.maxRetries ?? 1 };
 
   const res =
     MODEL === "claude-opus-5-5"
@@ -790,6 +791,7 @@ Rules for the child's lines:
 SAFETY
 Set "safety":
 - "child_at_risk" if the parent's message describes or threatens physically hurting the child, or says the child is in danger.
+- A calm instruction that prevents hitting, such as "I won't let you hit her" or "Don't hit her", does not by itself imply danger. Still flag any separate threat, report of harm, or sign of danger in the same message.
 - "parent_crisis" if the parent says they want to hurt themselves.
 - "none" otherwise. Ordinary frustration, firmness or a typical threat like "no iPad" is "none" (tag it as threat instead).
 
@@ -880,7 +882,7 @@ export const TURN_OUTPUT_JSON_SCHEMA = {
 3. `applyTurn(...)` (раздел 8).
 4. Выбрать реплику по смене уровня (8.2, шаг 7) → `sanitizeReply(...)`:
    - убрать префикс вида `Max:` или `Child:` и обрамляющие кавычки;
-   - если реплика пустая или содержит `ai|a.i.|artificial intelligence|language model|chatbot|assistant|simulation` (без учёта регистра), заменить на `pickFallbackLine(ageGroup, band, seed)`;
+   - если реплика пустая или содержит отдельное слово либо выражение `ai`, `a.i.`, `artificial intelligence`, `language model`, `chatbot`, `assistant` или `simulation` (без учёта регистра), заменить на `pickFallbackLine(ageGroup, band, seed)`. Использовать границы `\b` у слов и словосочетаний, а для `a.i.` учесть точку в конце (`\ba\.i\.(?!\w)`). `It's not fair!` не заменяется из-за `ai` внутри `fair`;
    - обрезать до 14 слов для 2–5 лет и до 24 для 6–12 (с «…»).
 5. `safety = maxSafety(detectSafety(text), out.safety)`. Приоритет: `parent_crisis` > `child_at_risk` > `none`.
 6. Исход (8.2, шаг 6). Вернуть `TurnResult`.
@@ -983,6 +985,7 @@ export async function runTurn(req: TurnRequest): Promise<{ result: TurnResult; s
       schema: TURN_OUTPUT_JSON_SCHEMA,
       maxTokens: 4000,
       timeoutMs: 12_000,
+      maxRetries: 0,
       validate: (raw) => TurnModelOutputSchema.parse(raw),
     });
     return { result: finalizeTurn(req, out, "ai"), source: "ai" };
@@ -1404,6 +1407,10 @@ Props: `{ band: MoodBand; speaking: boolean; thinking: boolean; name: string; si
   - `\b(not breathing|choking|unconscious|seizure|overdose|swallowed (pills|medicine|bleach|a battery))\b`.
 - Иначе `none`.
 
+Для двух правил с глаголом и объектом пропустить только конкретное совпадение, если непосредственно перед глаголом в той же части фразы стоит `won't let you`, `don't` или `do not` (после нормализации апострофа и пробелов, без учёта регистра, с границей слова перед оборотом). Проверить остальные совпадения в реплике. Исключение не применяется к признакам непосредственной опасности или `parent_crisis` и не отменяет независимый сигнал модели (9.5).
+
+Примеры для теста: `I won't let you hit her`, `Don't hit her` и `Do not hit her` → `none`; `Don't hit her. I'll hit him.` и `Don't hit her. She's not breathing.` → `child_at_risk`.
+
 Ложные срабатывания допустимы: окно можно закрыть и продолжить. Тест `safety.test.ts` — минимум 8 положительных и 8 отрицательных фраз (например, «I can't do this anymore» → none, «no iPad tomorrow» → none).
 
 ### 15.2 SafetyNotice — тексты (английский, в `copy.ts`)
@@ -1430,7 +1437,7 @@ Props: `{ band: MoodBand; speaking: boolean; thinking: boolean; name: string; si
 - Все AI-модули импортируют `server-only`. Клиентский код к Anthropic не обращается.
 - `dangerouslySetInnerHTML` запрещён. React экранирует текст модели.
 - Внешние ссылки: `target="_blank" rel="noopener noreferrer"`.
-- Перед публикацией репозитория: `git grep -n "sk-ant"` должен быть пустым. В истории коммитов ключа тоже не должно быть. Если ключ попал в коммит — ключ немедленно отозвать в Console и выпустить новый.
+- Перед публикацией репозитория: `git grep -nE "sk-ant-[A-Za-z0-9]"` не должен находить совпадений. В истории коммитов ключа тоже не должно быть. Если ключ попал в коммит — ключ немедленно отозвать в Console и выпустить новый.
 
 ### 15.6 Методика
 
@@ -1485,8 +1492,8 @@ export function track(event: EventName, props?: Record<string, string | number |
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "check": "npm run lint && npm run typecheck && npm run test",
     "eval": "tsx scripts/eval.ts",
@@ -1495,7 +1502,7 @@ export function track(event: EventName, props?: Record<string, string | number |
 }
 ```
 
-Если в установленной версии Next нет `next lint`, используйте `eslint .` и запишите это в журнал.
+В Next.js 16 команда `next lint` удалена. `next typegen` генерирует типы Next.js перед запуском `tsc`.
 
 `vitest.config.ts`:
 
@@ -1558,7 +1565,7 @@ export default defineConfig({
 - [ ] 21. Двойной клик Send → один ход.
 - [ ] 22. 400 символов — предел, счётчик виден.
 - [ ] 23. 45 быстрых ходов подряд → сообщение о лимите, приложение не падает.
-- [ ] 24. Репозиторий: `git grep -n "sk-ant"` пусто, README открывается, есть LICENSE.
+- [ ] 24. Репозиторий: `git grep -nE "sk-ant-[A-Za-z0-9]"` без совпадений, README открывается, есть LICENSE.
 - [ ] 25. Нигде нет запроса логина.
 - [ ] 26. В PostHog приходят события, в свойствах нет текстов.
 
@@ -1607,7 +1614,7 @@ export default defineConfig({
 ### 18.4 Установка с нуля (B, T+0:00)
 
 ```bash
-npx create-next-app@latest meltdown --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm
+npx create-next-app@16.4.6 meltdown --ts --tailwind --eslint --app --src-dir --import-alias "@/*" --use-npm --no-agents-md
 ```
 
 ```bash
@@ -1615,10 +1622,12 @@ cd meltdown && npm i @anthropic-ai/sdk zod server-only @vercel/analytics posthog
 ```
 
 ```bash
-npm i -D vitest tsx
+npm i -D vitest tsx @types/node@22
 ```
 
-Затем скопировать из `meltdown-kit`: `SPEC.md`, `CLAUDE.md`, `AGENTS.md`, `.env.example`, `src/data/*.json`. Создать `.env.local` по образцу. Проверить, что `.env*.local` есть в `.gitignore`.
+В `next.config.ts` оставить `cacheComponents` и `partialPrefetching` выключенными (в текущем конфиге они не заданы), чтобы сохранить `runtime` и `dynamic` из 10.1. Задать `agentRules: false`. Vitest 5 требует совместимых типов Node.js: используем `@types/node@22`.
+
+Затем скопировать из `meltdown-kit`: `SPEC.md`, `CLAUDE.md`, `AGENTS.md`, `.env.example`, `src/data/*.json`. Создать `.env.local` по образцу. Проверить, что `.gitignore` исключает `.env*` и оставляет в Git `.env.example` (`!.env.example`).
 
 ---
 
@@ -1923,7 +1932,7 @@ git fetch && git checkout a/rehearsal && npm install && npm run dev
 - [ ] PDF дека: не больше 10 слайдов, шрифты встроены, файл открывается.
 - [ ] Прод-ссылка открывается в инкогнито на чужом устройстве, без логина, путь проходится до конца.
 - [ ] GitHub публичный, открывается без входа. README: что это, как запустить, архитектура, результаты eval, источники, дисклеймер, лицензия.
-- [ ] В репозитории и его истории нет ключей (`git grep -n "sk-ant"`; если ключ когда-то попадал в коммит — он уже отозван).
+- [ ] В репозитории и его истории нет ключей (`git grep -nE "sk-ant-[A-Za-z0-9]"` для текущего дерева; если ключ когда-то попадал в коммит — он уже отозван).
 - [ ] `MOCK_AI` на проде **не** включён (кроме аварийного случая).
 - [ ] Spend limit в Console стоит.
 - [ ] Ссылки Stripe в тестовом режиме.
@@ -1937,6 +1946,9 @@ git fetch && git checkout a/rehearsal && npm install && npm run dev
 |---|---|---|---|
 | 1.0 | T+0 | C | Первая версия SPEC |
 | 1.1 | T+0 | C | Имена в ролях (A — Алихан, B — Тамирис, C — Рулан). Рулан — резервный разработчик для A и B. Протокол передачи задач (19.5), карта «задача → разделы» (19.6), правила экономии токенов (19.7), задача C0 |
+| 1.2 | 14.11.2026 | C | B1, Next.js 16.4.6 (10.1, 17.1, 18.4): `cacheComponents` и `partialPrefetching` выключены для совместимости с `runtime` и `dynamic`. `agentRules: false` и `create-next-app --no-agents-md` оставляют в проекте только командный `AGENTS.md`. `@types/node@22` для Vitest 5 (типы Node 20 несовместимы). Скрипты: `eslint .` и `next typegen && tsc --noEmit`. `.gitignore` исключает `.env*`, кроме `.env.example`. |
+| 1.2 | 14.11.2026 | C | Проверка ключей (15.5, 17.4, 24): `git grep -nE "sk-ant-[A-Za-z0-9]"`. Поиск только префикса находил сам SPEC. Санитайзер (9.5) ищет целые слова и выражения, чтобы не отбрасывать `It's not fair!`. |
+| 1.2 | 14.11.2026 | C | Решения для B: в 15.1 исключаем только совпадение с защитным запретом и продолжаем проверять остальную реплику. Для `/api/turn` оставляем 12 с и отключаем повторы SDK, чтобы сразу включать запасной режим при первой ошибке (9.1, 9.2, 9.11). |
 
 ---
 
