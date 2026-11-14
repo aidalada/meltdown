@@ -170,6 +170,7 @@ const CoachMessageSchema = z.discriminatedUnion("role", [
     again: z.boolean().optional(),
     rehearse: z.string().optional(),
     checkin: z.string().optional(),
+    askAge: z.boolean().optional(),
     preset: z.string().optional(),
   }),
 ]) satisfies z.ZodType<CoachMessage>;

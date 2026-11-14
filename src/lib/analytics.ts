@@ -3,7 +3,7 @@ import type { PostHog } from "posthog-js";
 export type EventName =
   | "landing_view" | "start_practice" | "scenario_result" | "turn_completed" | "session_completed"
   | "debrief_viewed" | "plan_copied" | "plan_saved" | "pricing_view" | "buy_click"
-  | "safety_shown" | "checkin";
+  | "safety_shown" | "checkin" | "coach_reply";
 
 let client: Promise<PostHog | null> | null = null;
 

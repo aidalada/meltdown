@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useState } from "react";
+import { SkillRadar } from "@/components/SkillRadar";
 import { PageSkeleton } from "@/components/Skeleton";
 import { useCopy, useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { track } from "@/lib/analytics";
-import { localDate, streakDays } from "@/lib/progress";
+import { localDate, skillScores, streakDays } from "@/lib/progress";
 import { addCheckin, listSessions, loadCheckins, loadPlan, type Checkin } from "@/lib/storage";
 import type { Session } from "@/lib/types";
 
@@ -52,7 +53,7 @@ function CheckinCard() {
       )}
       <div className="flex flex-wrap gap-2">
         <Link className="btn btn-ghost" href="/sos">{copy.progress.sosLink}</Link>
-        <Link className="btn btn-ghost btn-wrap pl-1.5" href="/coach">
+        <Link className="btn btn-ghost btn-wrap pl-1.5" href="/">
           <SebastianAvatar size={32} decorative />
           {copy.nav.coachCta}
         </Link>
@@ -91,6 +92,7 @@ function Progress() {
   const copy = useCopy();
   const [sessions] = useState(() => listSessions().filter((s) => s.turns.length > 0));
   const [streak] = useState(() => streakDays(sessions, new Date()));
+  const [skills] = useState(() => skillScores(sessions));
 
   return (
     <div className="wrap wrap-narrow">
@@ -100,6 +102,11 @@ function Progress() {
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
         <CheckinCard />
+        <section className="card db-section" aria-labelledby="skills-title">
+          <h2 id="skills-title" className="text-[22px]">{copy.progress.skillsTitle}</h2>
+          <SkillRadar scores={skills} />
+          <p className="text-[13px] text-muted">{sessions.length ? copy.progress.skillsNote : copy.progress.skillsEmpty}</p>
+        </section>
         <section className="grid gap-3">
           <h2 className="text-[22px]">{copy.progress.recentTitle}</h2>
           {sessions.length ? (

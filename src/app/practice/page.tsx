@@ -26,27 +26,25 @@ function PracticeSetup() {
   const copy = useCopy();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile>(() => loadProfile() ?? DEFAULT_PROFILE);
-  const [touched, setTouched] = useState<Partial<Record<keyof ChildValues, boolean>>>({});
   const [tab, setTab] = useState<"today" | "common">("today");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [safety, setSafety] = useState<"child_at_risk" | "parent_crisis" | null>(null);
 
-  function updateChild(field: keyof ChildValues, next: ChildValues) {
+  function updateChild(next: ChildValues) {
     const updated = { ...profile, ...next };
     setProfile(updated);
-    setTouched((t) => ({ ...t, [field]: true }));
     saveProfile(updated);
   }
 
+  /** The child chosen above plays every common moment, so the age and avatar stay the parent's choice. */
   function resolvePreset(preset: Scenario): Scenario {
-    const ageYears = touched.ageYears ? profile.ageYears : preset.ageYears;
     return {
       ...preset,
-      childName: touched.childName ? profile.childName : preset.childName,
-      ageYears,
-      ageGroup: ageGroupOf(ageYears),
-      temperament: touched.temperament ? profile.temperament : preset.temperament,
+      childName: profile.childName,
+      ageYears: profile.ageYears,
+      ageGroup: ageGroupOf(profile.ageYears),
+      temperament: profile.temperament,
     };
   }
 

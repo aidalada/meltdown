@@ -128,7 +128,10 @@ export function coachGreeting(memory: CoachMemory, firstVisit: boolean, now: Dat
   const messages: CoachMessage[] = firstVisit ? [{ role: "coach", at, lines: [c.disclosure] }] : [];
   const child = memory.child?.name ?? c.yourChild;
   const { plan, lastSession } = memory;
-  if (plan && !memory.planCheckedIn && localDate(new Date(plan.createdAt)) < localDate(now)) {
+  if (!memory.child) {
+    // Nothing is known yet: one tap on an age range, and the first real question follows the answer.
+    messages.push({ role: "coach", at, lines: [c.askAge], askAge: true });
+  } else if (plan && !memory.planCheckedIn && localDate(new Date(plan.createdAt)) < localDate(now)) {
     messages.push({ role: "coach", at, lines: [c.greetCheckin(child, plan.phrase)], checkin: plan.sessionId });
   } else if (plan && !memory.planCheckedIn) {
     messages.push({ role: "coach", at, lines: [c.greetPlanToday(plan.phrase)] });
@@ -139,6 +142,11 @@ export function coachGreeting(memory: CoachMemory, firstVisit: boolean, now: Dat
     messages.push({ role: "coach", at, lines: [c.greetFirst] });
   }
   return messages;
+}
+
+/** Sebastian's answer once the parent has picked an age range. */
+export function ageReply(now: Date, t: Texts = EN): CoachMessage {
+  return { role: "coach", at: now.toISOString(), lines: [t.copy.coach.ageThanks, t.copy.coach.greetFirst] };
 }
 
 /** Sebastian's answer to the morning check-in. */

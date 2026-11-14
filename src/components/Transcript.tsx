@@ -10,14 +10,22 @@ export type TranscriptItem =
   | { role: "parent"; text: string; tags: AppliedTag[] }
   | { role: "thinking"; name: string };
 
-export function Transcript({ items, showHints }: { items: TranscriptItem[]; showHints: boolean }) {
+interface TranscriptProps {
+  items: TranscriptItem[];
+  showHints: boolean;
+  /** "texting" restyles the same conversation as a messenger thread (12+). */
+  variant?: "stage" | "texting";
+}
+
+export function Transcript({ items, showHints, variant = "stage" }: TranscriptProps) {
   const copy = useCopy();
   const end = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (items.length > 1) end.current?.previousElementSibling?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [items.length]);
+  const lastParent = items.findLastIndex((item) => item.role === "parent");
   return (
-    <div className="flex min-h-[200px] flex-col gap-3 pt-1 pb-2" aria-live="polite">
+    <div className={`flex min-h-[200px] flex-col gap-3 pt-1 pb-2 ${variant === "texting" ? "transcript-texting" : ""}`} aria-live="polite">
       {items.map((item, i) => {
         if (item.role === "child") {
           return <div key={i} className="msg msg-child"><div className="bubble bubble-child">{item.text}</div></div>;
@@ -34,6 +42,7 @@ export function Transcript({ items, showHints }: { items: TranscriptItem[]; show
         return (
           <div key={i} className="msg msg-parent">
             <div className="bubble bubble-parent">{item.text}</div>
+            {variant === "texting" && i === lastParent && i === items.length - 2 && <span className="msg-status">{copy.rehearsal.delivered}</span>}
             {showHints && item.tags.length > 0 && (
               <div className="flex flex-wrap justify-end gap-1.5">
                 {item.tags.map((t) => <TagChip key={t.tag} tag={t.tag} applied={t.applied} />)}
