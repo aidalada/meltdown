@@ -26,7 +26,7 @@ export function Header() {
           <Link className="nav-link hidden lg:inline-flex" href="/pricing">{copy.nav.pricing}</Link>
           <Link className="nav-link hidden lg:inline-flex" href="/approach">{copy.nav.approach}</Link>
           <LanguageSwitch />
-          <Link className="btn btn-primary hidden min-h-11 pr-[18px] pl-1.5 md:inline-flex" href="/">
+          <Link className="btn btn-primary hidden min-h-11 pr-[18px] pl-1.5 md:inline-flex" href="/coach">
             <SebastianAvatar size={32} decorative />
             {copy.nav.coachCta}
           </Link>

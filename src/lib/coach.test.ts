@@ -4,7 +4,7 @@ import { copy } from "@/content/copy";
 import { textsFor } from "@/content/locale";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
 import { AGE_OPTIONS, choiceOf, isTexting, yearsForChoice } from "./age";
-import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, extractChild, mergeChildFacts, reminderIcs } from "./coach";
+import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, extractChild, mergeChildFacts, nominativeRu, reminderIcs } from "./coach";
 import { ageGroupOf } from "./data";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
 import {
@@ -285,6 +285,17 @@ describe("what the parent tells about the child", () => {
     expect(extractChild("my 4-year-old screams at bedtime")).toEqual({ ageYears: 4 });
     expect(extractChild("У меня дочь Аня, ей 6 лет, она не хочет чистить зубы.")).toEqual({ name: "Аня", ageYears: 6, gender: "girl" });
     expect(extractChild("Сыну 3 года, опять истерика на площадке.")).toEqual({ ageYears: 3, gender: "boy" });
+  });
+
+  it("turns a Russian name heard in the dative case back into its usual form", () => {
+    expect(extractChild("Моей дочке Джессике 4 года. Каждый вечер истерика из-за чистки зубов.")).toEqual({ name: "Джессика", ageYears: 4, gender: "girl" });
+    expect(extractChild("Сыну Артёму 5 лет, он кричит перед сном.")).toEqual({ name: "Артём", ageYears: 5, gender: "boy" });
+    expect(nominativeRu("Маше")).toBe("Маша");
+    expect(nominativeRu("Ане")).toBe("Аня");
+    expect(nominativeRu("Марии")).toBe("Мария");
+    expect(nominativeRu("Илье")).toBe("Илья");
+    expect(nominativeRu("Андрею")).toBe("Андрей");
+    expect(nominativeRu("Игорю")).toBe("Игорь");
   });
 
   it("does not mistake other words or numbers for a name or an age", () => {

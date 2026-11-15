@@ -239,8 +239,32 @@ const NAME_RU = "([А-ЯЁ][а-яё]{1,19})";
 const NAME_PATTERNS_RU: RegExp[] = [
   new RegExp(`(?:зовут|имя)\\s+${NAME_RU}`),
   // No "i" flag: the name must start with a capital letter, so "дочь опять…" is not read as a name.
-  new RegExp(`(?:^|[^а-яё])(?:[Дд]очь|[Дд]очка|[Дд]оченька|[Дд]очке|[Сс]ын|[Сс]ынок|[Сс]ыну|[Мм]алыш|[Мм]алышка)\\s*,?\\s+${NAME_RU}`),
+  new RegExp(`(?:^|[^а-яё])(?:[Дд]очь|[Дд]очка|[Дд]оченька|[Сс]ын|[Сс]ынок|[Мм]алыш|[Мм]алышка)\\s*,?\\s+${NAME_RU}`),
 ];
+/** "Моей дочке Джессике", "сыну Артёму": the name after these words is in the dative case. */
+const NAME_RU_DATIVE = new RegExp(`(?:^|[^а-яё])(?:[Дд]очке|[Дд]очери|[Мм]алышке|[Сс]ыну|[Мм]алышу)\\s*,?\\s+${NAME_RU}`);
+/** Names whose nominative ends in -я, so "Ане" becomes "Аня" and not "Ана". */
+const RU_YA_NAMES = new Set([
+  "Аня", "Таня", "Катя", "Соня", "Оля", "Варя", "Настя", "Юля", "Галя", "Валя", "Надя", "Ася", "Тася", "Майя", "Дуня", "Тоня",
+  "Ваня", "Коля", "Петя", "Федя", "Вася", "Костя", "Митя", "Сеня", "Толя",
+]);
+
+/**
+ * The nominative form of a Russian name heard in the dative case: Джессике → Джессика, Маше → Маша,
+ * Марии → Мария, Ане → Аня, Артёму → Артём, Андрею → Андрей. A guess for rare names, never empty.
+ */
+export function nominativeRu(name: string): string {
+  if (name.endsWith("ии")) return name.slice(0, -1) + "я";
+  if (name.endsWith("ье")) return name.slice(0, -1) + "я";
+  if (name.endsWith("ею")) return name.slice(0, -1) + "й";
+  if (name.endsWith("е")) {
+    const stem = name.slice(0, -1);
+    return RU_YA_NAMES.has(stem + "я") ? stem + "я" : stem + "а";
+  }
+  if (name.endsWith("у") && name.length > 3) return name.slice(0, -1);
+  if (name.endsWith("ю") && name.length > 3) return name.slice(0, -1) + "ь";
+  return name;
+}
 /** Capitalized words that follow "my son" or start a sentence but are not names. */
 const NOT_NAMES = new Set([
   "I", "The", "She", "He", "It", "They", "We", "Tonight", "Today", "Yesterday", "This", "That", "When", "After", "Before", "Then",
@@ -268,6 +292,10 @@ export function extractChild(text: string): FoundChild {
       found.name = name;
       break;
     }
+  }
+  if (!found.name) {
+    const dative = NAME_RU_DATIVE.exec(text)?.[1];
+    if (dative && !NOT_NAMES.has(dative)) found.name = nominativeRu(dative);
   }
   if (/\bdaughters?\b/i.test(text) || /\b(?:my|our)\s+(?:\w+[\s-])?(?:girl|little girl)\b/i.test(text) || /(?:^|[^а-яё])(?:дочь|дочка|доченька|дочке|дочери|дочку|малышка)(?![а-яё])/i.test(text)) {
     found.gender = "girl";

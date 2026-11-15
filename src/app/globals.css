@@ -581,3 +581,15 @@ body {
   .growth-bar { display: block; height: 10px; border-radius: 999px; background: var(--color-line); overflow: hidden; }
   .growth-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #FF8A3D, #FF4F93, #7C3AED); }
 }
+@layer components {
+  /* Home: one screen, no scrolling on a phone. Picture on top (right on desktop), then the button. */
+  .home-hero { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: center; gap: 18px; min-height: calc(100dvh - 160px); padding-block: 12px 24px; text-align: center; }
+  @media (min-width: 900px) { .home-hero { grid-template-columns: 1fr 1fr; justify-items: stretch; gap: 48px; min-height: calc(100dvh - 90px); text-align: left; } .home-art { order: 2; } }
+  .home-art { width: min(100%, 340px); animation: home-float 6s ease-in-out infinite; }
+  @media (min-width: 900px) { .home-art { width: 100%; max-width: 480px; justify-self: center; } }
+  .home-copy { display: grid; justify-items: center; gap: 14px; min-width: 0; }
+  @media (min-width: 900px) { .home-copy { justify-items: start; } }
+  .home-cta { min-height: 60px; padding: 0 26px 0 10px; font-size: 18px; border-radius: 999px; box-shadow: 0 12px 26px rgba(47, 91, 234, .32); }
+  @media (max-height: 700px) and (max-width: 899px) { .home-art { width: min(100%, 250px); } }
+}
+@keyframes home-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }

@@ -54,7 +54,7 @@ function CheckinCard() {
       )}
       <div className="flex flex-wrap gap-2">
         <Link className="btn btn-ghost" href="/sos">{copy.progress.sosLink}</Link>
-        <Link className="btn btn-ghost btn-wrap pl-1.5" href="/">
+        <Link className="btn btn-ghost btn-wrap pl-1.5" href="/coach">
           <SebastianAvatar size={32} decorative />
           {copy.nav.coachCta}
         </Link>
