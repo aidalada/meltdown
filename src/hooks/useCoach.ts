@@ -174,7 +174,7 @@ export function useCoach() {
   }
 
   function remind() {
-    const file = new Blob([reminderIcs(`${window.location.origin}/coach`, new Date(), texts)], { type: "text/calendar" });
+    const file = new Blob([reminderIcs(`${window.location.origin}/coach`, new Date(), texts, memory)], { type: "text/calendar" });
     const url = URL.createObjectURL(file);
     const link = document.createElement("a");
     link.href = url;

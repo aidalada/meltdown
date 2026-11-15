@@ -197,6 +197,23 @@ describe("reminderIcs", () => {
     expect(ics.split("\r\n")[0]).toBe("BEGIN:VCALENDAR");
     expect(ics).toContain("URL:https://meltdown-flame.vercel.app/coach");
   });
+
+  it("writes Sebastian's own words from memory and folds long lines", () => {
+    const memory: CoachMemory = {
+      ...EMPTY, child: { ...MAX, name: "Jessica" }, struggle: "threat",
+      lastSession: { scenarioId: "screen-time-off", title: "Turning off the tablet", outcome: "ended_by_parent" },
+      plan: { sessionId: "s1", phrase: "Do you want to save it now or after this round?", createdAt: YESTERDAY.toISOString() },
+    };
+    const ics = reminderIcs("https://meltdown-flame.vercel.app/coach", NOW, textsFor("en"), memory);
+    const unfolded = ics.replace(/\r\n /g, "");
+    expect(unfolded).toContain("SUMMARY:" + copy.coach.reminderTitleFor("Jessica"));
+    expect(unfolded).toContain("Turning off the tablet");
+    expect(unfolded).toContain("Do you want to save it now or after this round?");
+    expect(ics.split("\r\n").every((line) => new TextEncoder().encode(line).length <= 75)).toBe(true);
+    const ru = reminderIcs("https://x.app/coach", NOW, textsFor("ru"), memory);
+    expect(ru.split("\r\n").every((line) => new TextEncoder().encode(line).length <= 75)).toBe(true);
+    expect(ru.replace(/\r\n /g, "")).toContain("Себастьян: как сегодня Jessica?");
+  });
 });
 
 describe("Sebastian in Russian", () => {

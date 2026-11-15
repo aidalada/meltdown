@@ -309,11 +309,26 @@ export function mergeChildFacts(found: FoundChild, profile: Profile, facts: Chil
 const icsText = (s: string) => s.replace(/[\\;,]/g, (ch) => `\\${ch}`);
 
 /** A daily 7 pm calendar reminder (iCalendar). Floating local time, so it follows the phone's time zone. */
-export function reminderIcs(url: string, now: Date, t: Texts = EN): string {
+/**
+ * A daily 7 pm calendar reminder (iCalendar). Floating local time, so it follows the phone's time zone.
+ * With memory, the text is Sebastian's own: the child's name, the last moment you talked about, tonight's
+ * phrase and the habit you are working on. The calendar keeps the text from the day it was added.
+ */
+export function reminderIcs(url: string, now: Date, t: Texts = EN, memory?: CoachMemory): string {
   const c = t.copy.coach;
   const pad = (n: number) => String(n).padStart(2, "0");
   const day = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
   const stamp = now.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+  const title = memory?.child?.named ? c.reminderTitleFor(memory.child.name) : c.reminderTitle;
+  const lines: string[] = [];
+  if (memory?.lastSession) {
+    const moment = t.scenario({ id: memory.lastSession.scenarioId, title: memory.lastSession.title, setting: "" }).title;
+    lines.push(c.reminderLast(moment, childLabel(memory, t)));
+  }
+  if (memory?.plan) lines.push(c.reminderPlan(memory.plan.phrase));
+  if (memory?.struggle) lines.push(c.reminderWatch(c.workingOn[memory.struggle]));
+  lines.push(c.reminderBody, url);
+  const description = lines.map(icsText).join("\\n");
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
@@ -325,16 +340,37 @@ export function reminderIcs(url: string, now: Date, t: Texts = EN): string {
     `DTSTART:${day}T190000`,
     "DURATION:PT5M",
     "RRULE:FREQ=DAILY",
-    `SUMMARY:${icsText(c.reminderTitle)}`,
-    `DESCRIPTION:${icsText(`${c.reminderBody} ${url}`)}`,
+    `SUMMARY:${icsText(title)}`,
+    `DESCRIPTION:${description}`,
     `URL:${url}`,
     "BEGIN:VALARM",
     "ACTION:DISPLAY",
-    `DESCRIPTION:${icsText(c.reminderTitle)}`,
+    `DESCRIPTION:${icsText(title)}`,
     "TRIGGER:PT0M",
     "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",
     "",
-  ].join("\r\n");
+  ].map(foldIcs).join("\r\n");
+}
+
+/** iCalendar lines longer than 75 bytes are folded: CRLF plus a space (RFC 5545). Counts UTF-8 bytes, so Russian text folds correctly. */
+function foldIcs(line: string): string {
+  const encoder = new TextEncoder();
+  if (encoder.encode(line).length <= 75) return line;
+  const parts: string[] = [];
+  let current = "";
+  let size = 0;
+  for (const ch of line) {
+    const bytes = encoder.encode(ch).length;
+    if (size + bytes > (parts.length === 0 ? 75 : 74)) {
+      parts.push(current);
+      current = "";
+      size = 0;
+    }
+    current += ch;
+    size += bytes;
+  }
+  parts.push(current);
+  return parts.join("\r\n ");
 }
