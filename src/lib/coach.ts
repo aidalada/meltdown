@@ -226,15 +226,17 @@ const NUMBER_WORDS: Record<string, number> = {
   two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
 };
 const NUM = String.raw`(\d{1,2}|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen)`;
+const KID_EN = String.raw`(?:daughter|son|girl|boy|kid|child|toddler|little one|baby)`;
+const AGE_END = String.raw`\b(?![.,]\d|[\s-]*(?:seconds?|secs?|minutes?|mins?|hours?|hrs?|days?|weeks?|months?|times?|am|pm|o'clock)\b)`;
 const AGE_PATTERNS: RegExp[] = [
+  new RegExp(String.raw`\b(?:my|our)\s+${KID_EN}(?:\s+[\p{L}][\p{L}'’-]*)?\s+(?:is|just turned|turned)\s+${NUM}${AGE_END}`, "iu"),
   new RegExp(String.raw`\b${NUM}[\s-]*(?:years?|yrs?)[\s-]*old\b`, "i"),
   new RegExp(String.raw`\b${NUM}[\s-]*(?:y/o|yo)\b`, "i"),
-  new RegExp(String.raw`\b(?:she|he|they)(?:'s| is| are| just turned| turned)\s+${NUM}\b(?![\s-]*(?:minutes?|min|hours?|times?|am|pm|o'clock))`, "i"),
+  new RegExp(String.raw`\b(?:she|he|they)(?:'s| is| are| just turned| turned)\s+${NUM}${AGE_END}`, "i"),
   new RegExp(String.raw`\b(?:my|our)\s+${NUM}[\s-]*(?:year[\s-]*old)\b`, "i"),
   /(\d{1,2})\s*(?:год|года|лет)(?![а-яё])/i,
   /(?:^|[^а-яё])(?:ей|ему|исполнилось)\s+(\d{1,2})(?![\d])/i,
 ];
-const KID_EN = String.raw`(?:daughter|son|girl|boy|kid|child|toddler|little one|baby)`;
 const NAME_EN = String.raw`([A-Z][a-z]{1,19})`;
 const NAME_PATTERNS_EN: RegExp[] = [
   new RegExp(String.raw`\b(?:her|his|their|my (?:daughter|son|kid|child)'s)\s+name\s+is\s+${NAME_EN}\b`),

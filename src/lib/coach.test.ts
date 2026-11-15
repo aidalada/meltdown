@@ -279,6 +279,7 @@ describe("age ranges", () => {
 
 describe("what the parent tells about the child", () => {
   it("finds the name, the exact age and that it is a daughter", () => {
+    expect(extractChild("My daughter Jessica is 7. She refused to brush her teeth before bed.")).toEqual({ name: "Jessica", ageYears: 7, gender: "girl" });
     expect(extractChild("I have a daughter, her name is Jessica, she is 7. Tonight she refused the tablet.")).toEqual({ name: "Jessica", ageYears: 7, gender: "girl" });
     expect(extractChild("My son Leo is 5 years old and bedtime is a war.")).toEqual({ name: "Leo", ageYears: 5, gender: "boy" });
     expect(extractChild("my 4-year-old screams at bedtime")).toEqual({ ageYears: 4 });
@@ -288,6 +289,7 @@ describe("what the parent tells about the child", () => {
 
   it("does not mistake other words or numbers for a name or an age", () => {
     expect(extractChild("He screamed for 20 minutes and I yelled. She is 20 minutes late.")).toEqual({});
+    expect(extractChild("My son Leo is 7 minutes late.")).toEqual({ name: "Leo", gender: "boy" });
     expect(extractChild("My daughter refused to brush. Tonight was hard.")).toEqual({ gender: "girl" });
     expect(extractChild("дочь опять не спит")).toEqual({ gender: "girl" });
   });

@@ -50,12 +50,15 @@ const scenarioKeywords: [RegExp, string][] = [
   [/\b(homework|math|reading|worksheet)/i, "homework-meltdown"],
 ];
 
+// Reject clear requests for unrelated content before they can match a preset keyword.
+const unrelatedRequest = /^(?:please[\s,]+)?(?:(?:can|could|would) you\s+)?(?:write|compose|generate|recite|tell)\s+(?:(?:me|us)\s+)?(?:(?:a|an|the|some)\s+)?(?:poems?|stor(?:y|ies)|jokes?|songs?|essays?)\b/i;
+
 export function heuristicScenarioOutput(req: ScenarioRequest): ScenarioModelOutput {
   const text = normalizeText(req.text);
   const match = scenarioKeywords.find(([pattern]) => pattern.test(text));
   const preset = match && PRESETS.find((scenario) => scenario.id === match[1]);
   return {
-    on_topic: true,
+    on_topic: !unrelatedRequest.test(text),
     safety: detectSafety(text),
     title: preset?.title ?? "A hard moment",
     trigger: preset?.trigger ?? text.slice(0, 60),

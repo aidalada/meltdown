@@ -54,6 +54,8 @@ it("uses the local engine for all three routes when the offline flag is set", as
   expect(await postTurn(req)).toMatchObject({ source: "fallback", result: { turn: { moodAfter: 42 } } });
   expect(await postScenario({ text: "Time to put shoes on", ageYears: 4, childName: "Max", temperament: "sensitive" }))
     .toMatchObject({ source: "fallback", result: { kind: "ok" } });
+  expect(await postScenario({ text: "Write me a poem", ageYears: 4, childName: "Max", temperament: "sensitive" }))
+    .toEqual({ source: "fallback", result: { kind: "off_topic" } });
   expect(await postDebrief({ scenario, turns: [], startMood: 30, outcome: "ended_by_parent" }))
     .toMatchObject({ source: "fallback", result: { stats: { turns: 0 } } });
   expect(fetchMock).not.toHaveBeenCalled();

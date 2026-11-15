@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTexts } from "@/content/i18n";
 import type { Texts } from "@/content/locale";
 import { createSession } from "@/hooks/useSession";
@@ -23,8 +23,8 @@ const DAY_MS = 86_400_000;
 /** Pause before Sebastian answers, so the reply reads as a reply and not as a page change. */
 const REPLY_DELAY_MS = 700;
 
-function readMemory(): CoachMemory {
-  return buildMemory({ profile: loadProfile(), sessions: listSessions(), plan: loadPlan(), checkins: loadCheckins(), facts: loadChildFacts() });
+function readMemory(profile = loadProfile(), facts = loadChildFacts()): CoachMemory {
+  return buildMemory({ profile, sessions: listSessions(), plan: loadPlan(), checkins: loadCheckins(), facts });
 }
 
 /** `?morning=1` jumps a day ahead, so the demo can show the next-morning check-in. */
@@ -58,6 +58,7 @@ export function useCoach() {
   const [rehearsing, setRehearsing] = useState(false);
   const [safety, setSafety] = useState<"child_at_risk" | "parent_crisis" | null>(null);
   const [reminded, setReminded] = useState(false);
+  const memoryVersion = useRef(0);
 
   function commit(next: CoachMessage[]) {
     setMessages(next);
@@ -66,31 +67,24 @@ export function useCoach() {
 
   async function send(text: string): Promise<boolean> {
     if (typing || rehearsing) return false;
-    const withParent: CoachMessage[] = [...messages, { role: "parent", at: clock().toISOString(), text }];
+    const version = memoryVersion.current;
+    const now = clock();
+    const withParent: CoachMessage[] = [...messages, { role: "parent", at: now.toISOString(), text }];
     commit(withParent);
     setTyping(true);
-    // "My daughter Jessica is 7": the name and the exact age go to the browser profile right away.
-    let known = memory;
-    let remembered: string | undefined;
-    const found = extractChild(text);
-    if (found.name || found.ageYears || found.gender) {
-      const merged = mergeChildFacts(found, loadProfile() ?? DEFAULT_PROFILE, loadChildFacts());
-      if (merged.changed) {
-        saveProfile(merged.profile);
-        saveChildFacts(merged.facts);
-        known = readMemory();
-        setMemory(known);
-        if (found.name || found.ageYears) remembered = copy.coach.rememberedChild(found.name ?? null, found.ageYears ?? null);
-      }
-    }
     // The local coach always answers first: it runs the safety check and is the fallback.
-    const local = coachReply(text, known, clock(), texts);
+    const local = coachReply(text, memory, now, texts);
+    const found = local.kind === "message" ? extractChild(text) : {};
+    const proposed = local.kind === "message" ? mergeChildFacts(found, loadProfile() ?? DEFAULT_PROFILE, loadChildFacts()) : null;
+    // Give the model the current context, but save proposed facts only after both safety checks.
+    const known = proposed?.changed ? readMemory(proposed.profile, proposed.facts) : memory;
     // Only a real story goes to the model: never crisis words, never a too-short message.
     const story = local.kind === "message" && local.message.role === "coach" && local.message.rehearse !== undefined;
     const [ai] = await Promise.all([
       story ? askCoach(coachRequest(text, texts.locale, known, messages)) : null,
       wait(REPLY_DELAY_MS),
     ]);
+    if (version !== memoryVersion.current) return false;
     let message = local.message;
     let safety = local.kind === "safety" ? local.safety : null;
     if (ai && ai.safety !== "none") {
@@ -100,7 +94,14 @@ export function useCoach() {
       // The model's words and choice of technique; the why and the source still come from techniques.json.
       message = { ...local.message, lines: [ai.lead], technique: ai.technique, say: ai.say, preset: ai.preset ?? local.message.preset };
     }
-    if (remembered && message.role === "coach") message = { ...message, remembered };
+    if (safety === null && proposed?.changed) {
+      saveProfile(proposed.profile);
+      saveChildFacts(proposed.facts);
+      setMemory(readMemory());
+      if ((found.name || found.ageYears) && message.role === "coach") {
+        message = { ...message, remembered: copy.coach.rememberedChild(found.name ?? null, found.ageYears ?? null) };
+      }
+    }
     if (story) track("coach_reply", { source: ai ? "ai" : "fallback" });
     commit([...withParent, message]);
     setTyping(false);
@@ -185,10 +186,12 @@ export function useCoach() {
   }
 
   function forget() {
+    memoryVersion.current++;
     forgetEverything();
     const fresh = readMemory();
     setMemory(fresh);
     setMessages(coachGreeting(fresh, true, clock(), texts));
+    setTyping(false);
     setReminded(false);
   }
 

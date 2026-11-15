@@ -33,8 +33,18 @@ it("S03 checks safety even when output is off topic or has a different severity"
 });
 
 it("honors an off-topic model output", () => {
-  const req = request("S02");
+  const req = request("S01");
   expect(finalizeScenario(req, { ...heuristicScenarioOutput(req), on_topic: false })).toEqual({ kind: "off_topic" });
+});
+
+it.each([
+  "Write me a poem",
+  request("S02").text,
+  "Could you write me a poem about homework?",
+])("rejects an off-topic request in fallback: %s", (text) => {
+  const req = { ...request("S02"), text };
+  const out = ScenarioModelOutputSchema.parse(heuristicScenarioOutput(req));
+  expect(finalizeScenario(req, out)).toEqual({ kind: "off_topic" });
 });
 
 it("caps scenario fields and sanitizes the opening line at the upset band", () => {
