@@ -1,0 +1,8 @@
+
+> meltdown@0.1.0 warmup
+> tsx scripts/warmup.ts --base=https://meltdown-flame.vercel.app
+
+/api/health HTTP 200 source=— latencyMs=647
+/api/turn HTTP 200 source=ai latencyMs=2426
+/api/scenario HTTP 200 source=ai latencyMs=2246
+/api/debrief HTTP 200 source=ai latencyMs=3454

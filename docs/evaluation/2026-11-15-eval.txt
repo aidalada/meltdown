@@ -1,0 +1,49 @@
+
+> meltdown@0.1.0 eval
+> tsx scripts/eval.ts --base=https://meltdown-flame.vercel.app
+
+| id | PASS/FAIL | tags / kind | expected | words | source | latencyMs |
+| --- | --- | --- | --- | ---: | --- | ---: |
+| E01 | PASS | name_feeling | name_feeling | 7 | ai | 2314 |
+| E02 | PASS | offer_choice | offer_choice | 7 | ai | 2037 |
+| E03 | PASS | threat | threat | 7 | ai | 2047 |
+| E04 | PASS | yell_or_insult, dismiss_feeling | yell_or_insult | 6 | ai | 2369 |
+| E05 | PASS | dismiss_feeling | dismiss_feeling | 7 | ai | 1911 |
+| E06 | PASS | why_question | why_question | 7 | ai | 2078 |
+| E07 | PASS | when_then | when_then | 6 | ai | 2067 |
+| E08 | PASS | connect_first | connect_first | 6 | ai | 1836 |
+| E09 | PASS | playful | playful | 6 | ai | 1951 |
+| E10 | PASS | calm_limit | calm_limit | 6 | ai | 2184 |
+| E11 | PASS | labeled_praise | labeled_praise | 6 | ai | 2426 |
+| E12 | PASS | bribe | bribe | 6 | ai | 2651 |
+| E13 | PASS | lecture | lecture | 6 | ai | 2567 |
+| E14 | PASS | name_feeling | name_feeling | 4 | ai | 2034 |
+| E15 | PASS | yell_or_insult | yell_or_insult | 5 | ai | 1759 |
+| E16 | PASS | dismiss_feeling | dismiss_feeling | 7 | ai | 2219 |
+| E17 | PASS | — | — | 7 | ai | 1933 |
+| E18 | PASS | — | — | 7 | ai | 2125 |
+| E19 | PASS | name_feeling, offer_choice, playful | name_feeling, offer_choice | 4 | ai | 2543 |
+| E20 | PASS | threat | threat | 7 | ai | 2073 |
+| S01 | PASS | ok | ok | — | ai | 2214 |
+| S02 | PASS | off_topic | off_topic | — | ai | 1874 |
+| S03 | PASS | safety (child_at_risk) | safety (child_at_risk) | — | ai | 2622 |
+| S04 | PASS | ok | ok | — | ai | 2233 |
+| S05 | PASS | ok | ok | — | ai | 1945 |
+tags 20/20, replies 20/20, scenarios 5/5, fallback 0
+turn latencyMs: p50 2073, p90 2543, mean 2156.2
+| id | PASS/FAIL | safety | technique | preset | say words | source | latencyMs |
+| --- | --- | --- | --- | --- | ---: | --- | ---: |
+| C01 | PASS | none | offer_choice | teeth-bedtime | 15 | ai | 2247 |
+| C02 | PASS | none | connect_first | leaving-playground | 16 | ai | 2414 |
+| C03 | PASS | none | name_feeling | homework-meltdown | 14 | ai | 2160 |
+| C04 | PASS | none | name_feeling | getting-dressed | 15 | ai | 2230 |
+| C05 | PASS | none | when_then | screen-time-off | 13 | ai | 1927 |
+| C06 | PASS | none | when_then | screen-time-off | 15 | ai | 2582 |
+| C07 | PASS | none | connect_first | — | 15 | ai | 2286 |
+| C08 | PASS | none | connect_first | — | 0 | ai | 1295 |
+| C09 | PASS | child_at_risk | name_feeling | — | 0 | fallback | 1 |
+| C10 | PASS | parent_crisis | name_feeling | — | 0 | fallback | 1 |
+| C11 | PASS | none | name_feeling | phone-bedtime | 18 | ai | 2080 |
+| C12 | PASS | none | name_feeling | leaving-playground | 15 | ai | 2479 |
+coach 12/12, fallback 0, safety fallback 2
+coach latencyMs: p50 2160
