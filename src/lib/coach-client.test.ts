@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CoachMemory } from "@/types/coach";
 import { askCoach, coachRequest, resetCoachApi, type CoachApiRequest } from "./coach-client";
+import { CoachRequestSchema } from "./schemas";
 
 const MEMORY: CoachMemory = {
   child: { name: "Max", ageYears: 4, temperament: "strong-willed" }, rehearsals: 2, calmReached: 1,
@@ -55,6 +56,14 @@ describe("askCoach", () => {
     expect(await askCoach(REQUEST)).toBeNull();
   });
 
+  it("uses the local coach when the server answered from its own fallback, and keeps asking", async () => {
+    const fetchMock = respond(200, { ok: true, data: REPLY, meta: { source: "fallback", latencyMs: 40 } });
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await askCoach(REQUEST)).toBeNull();
+    expect(await askCoach(REQUEST)).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it("falls back when the network fails", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("offline"); }));
     expect(await askCoach(REQUEST)).toBeNull();
@@ -62,6 +71,11 @@ describe("askCoach", () => {
 });
 
 describe("coachRequest", () => {
+  it("builds a body the route accepts", () => {
+    expect(CoachRequestSchema.safeParse(REQUEST).success).toBe(true);
+  });
+
+
   it("sends the memory the model needs and the recent conversation", () => {
     const request = coachRequest("He screamed about teeth again tonight.", "ru", MEMORY, [
       { role: "coach", at: "2026-11-15T10:00:00.000Z", lines: ["Hi.", "What happened?"] },

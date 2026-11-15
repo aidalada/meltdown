@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { DEBRIEF_OUTPUT_JSON_SCHEMA, SCENARIO_OUTPUT_JSON_SCHEMA, TURN_OUTPUT_JSON_SCHEMA } from "./json-schemas";
+import { COACH_OUTPUT_JSON_SCHEMA, DEBRIEF_OUTPUT_JSON_SCHEMA, SCENARIO_OUTPUT_JSON_SCHEMA, TURN_OUTPUT_JSON_SCHEMA } from "./json-schemas";
 
 const forbidden = ["minLength", "maxLength", "minimum", "maximum", "maxItems"];
 
@@ -23,6 +23,7 @@ function checkSchema(value: unknown, path: string): void {
 
 it.each([
   ["turn", TURN_OUTPUT_JSON_SCHEMA], ["scenario", SCENARIO_OUTPUT_JSON_SCHEMA], ["debrief", DEBRIEF_OUTPUT_JSON_SCHEMA],
+  ["coach", COACH_OUTPUT_JSON_SCHEMA],
 ] as const)("uses supported constraints and closed, fully required objects in %s", (name, schema) => {
   expect(schema.type).toBe("object");
   checkSchema(schema, name);

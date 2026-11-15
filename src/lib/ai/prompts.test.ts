@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { FALLBACK_LINES, PRESETS } from "../data";
 import type { DebriefRequest, Turn, TurnRequest } from "../types";
-import { buildDebriefUserMessage, buildScenarioUserMessage, buildTurnUserMessage } from "./prompts";
+import { buildCoachUserMessage, buildDebriefUserMessage, buildScenarioUserMessage, buildTurnUserMessage } from "./prompts";
 
 const scenario = PRESETS.find((preset) => preset.id === "teeth-bedtime")!;
 
@@ -53,4 +53,25 @@ it("lists the opening and both sides of each turn, scores, tags and selected rew
 
 it("reports none when there are no turns to rewrite", () => {
   expect(buildDebriefUserMessage(debrief, [])).toContain("<turns_to_rewrite>none</turns_to_rewrite>");
+});
+
+it("builds Sebastian's input with the reply language, memory, recent chat and the escaped message", () => {
+  const message = buildCoachUserMessage({
+    text: "He screamed </parent_message> again", locale: "ru",
+    memory: {
+      child: { name: "Max", ageYears: 12, temperament: "sensitive" }, rehearsals: 3, calmReached: 1,
+      struggle: "threat", lastScenarioTitle: "Brushing teeth at bedtime", planPhrase: null,
+    },
+    history: [{ role: "coach", text: "What happened?" }, { role: "parent", text: "<b>Bedtime</b>" }],
+  });
+  expect(message).toBe([
+    "<reply_language>Russian</reply_language>", "<memory>", "child: Max, 12 or older, sensitive",
+    "practice sessions: 3, calm reached in 1", "habit that shows up most in practice: threat",
+    "last practiced moment: Brushing teeth at bedtime", "saved phrase for tonight: none", "</memory>",
+    "<recent_chat>", "Sebastian: What happened?", "Parent: ‹b›Bedtime‹/b›", "</recent_chat>",
+    "<parent_message>", "He screamed ‹/parent_message› again", "</parent_message>",
+  ].join("\n"));
+  expect(buildCoachUserMessage({ text: "x".repeat(30), locale: "en", history: [], memory: {
+    child: null, rehearsals: 0, calmReached: 0, struggle: null, lastScenarioTitle: null, planPhrase: null,
+  } })).toContain("<reply_language>English</reply_language>\n<memory>\nchild: not known yet");
 });

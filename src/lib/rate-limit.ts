@@ -1,7 +1,7 @@
-export type RateLimitedRoute = "turn" | "scenario" | "debrief";
+export type RateLimitedRoute = "turn" | "scenario" | "debrief" | "coach";
 
 const windowMs = 10 * 60 * 1000;
-const limits: Record<RateLimitedRoute, number> = { turn: 40, scenario: 15, debrief: 15 };
+const limits: Record<RateLimitedRoute, number> = { turn: 40, scenario: 15, debrief: 15, coach: 30 };
 const requests = new Map<string, number[]>();
 let nextCleanup = 0;
 

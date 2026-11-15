@@ -1,4 +1,6 @@
 import { z } from "zod";
+import type { Locale } from "@/content/locale";
+import type { CoachApiReply, CoachApiRequest } from "./coach-client";
 import { MAX_HISTORY_ITEMS, MAX_PARENT_TEXT, MAX_SCENARIO_TEXT, MAX_TURNS } from "./constants";
 import type {
   AgeGroup, ApiErrorCode, ApiResponse, AppliedTag, Debrief, DebriefRequest, DebriefStats,
@@ -197,6 +199,42 @@ export const DebriefRequestSchema = z.object({
   outcome: OutcomeSchema.exclude(["continue"]),
   startMood: mood,
 }) satisfies z.ZodType<DebriefRequest>;
+
+// ---------- Sebastian, POST /api/coach (contract: src/lib/coach-client.ts) ----------
+export const LocaleSchema = z.enum(["en", "ru"]) satisfies z.ZodType<Locale>;
+
+export const CoachRequestSchema = z.object({
+  text: z.string().trim().min(1).max(MAX_SCENARIO_TEXT),
+  locale: LocaleSchema,
+  memory: z.object({
+    child: z.object({ name: z.string().max(40), ageYears, temperament: TemperamentSchema }).nullable(),
+    rehearsals: z.int().min(0),
+    calmReached: z.int().min(0),
+    struggle: NegativeTagSchema.nullable(),
+    lastScenarioTitle: z.string().max(120).nullable(),
+    planPhrase: z.string().max(240).nullable(),
+  }),
+  history: z.array(z.object({ role: z.enum(["parent", "coach"]), text: z.string().max(1200) })).max(8),
+}) satisfies z.ZodType<CoachApiRequest>;
+export type CoachRequest = z.infer<typeof CoachRequestSchema>;
+
+/** What the model returns. Empty `say` and `preset: "none"` mean "no value"; the code cleans and checks the rest. */
+export const CoachModelOutputSchema = z.object({
+  safety: SafetySchema,
+  lead: z.string(),
+  technique: PositiveTagSchema,
+  say: z.string(),
+  preset: z.string(),
+});
+export type CoachModelOutput = z.infer<typeof CoachModelOutputSchema>;
+
+export const CoachReplySchema = z.object({
+  safety: SafetySchema,
+  lead: z.string().min(1).max(400),
+  technique: PositiveTagSchema,
+  say: z.string().min(1).max(160).optional(),
+  preset: z.string().max(60).optional(),
+}) satisfies z.ZodType<CoachApiReply>;
 
 export function ApiResponseSchema<T>(data: z.ZodType<T>): z.ZodType<ApiResponse<T>> {
   return z.discriminatedUnion("ok", [

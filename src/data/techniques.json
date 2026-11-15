@@ -16,8 +16,9 @@
       },
       "patterns": [
         "\\b(you|you're|youre|you are|you seem|you look|you feel|sounds like you|looks like you|i can see you)\\b[^.!?]{0,30}\\b(mad|angry|upset|sad|frustrated|disappointed|scared|worried|tired|annoyed|grumpy|jealous|nervous|overwhelmed|hurt)\\b",
-        "\\b(that|this) (is|was|feels) (so |really )?(hard|frustrating|annoying|disappointing|unfair|scary)\\b",
-        "\\byou (really|so) (want|wanted|wish)\\b"
+        "\\b(it's|it is|that's|that is|this is|that was|this was|(?<!\\bi )feels?)\\s+(so |really |super |very )?(hard|frustrating|frustrated|annoying|disappointing|unfair|scary|tough|itchy|uncomfortable)\\b",
+        "\\byou (really|so|just) (want|wanted|wish)\\b",
+        "\\byou (really |so |just )?(love|loved|miss|don't want|didn't want|do not want)\\b"
       ]
     },
     {
@@ -53,7 +54,7 @@
       },
       "patterns": [
         "\\b(do you want|would you like|you can choose|you can pick|which one|which do you|you get to choose|you get to pick|want to)\\b[^?]{0,60}\\bor\\b",
-        "\\b\\w+ or (?!else\\b)\\w+( one)?\\s*\\?"
+        "\\b\\w+ or (?!else\\b|not\\b)[^.!?]{1,40}\\?"
       ]
     },
     {
@@ -106,7 +107,8 @@
         "url": "https://doi.org/10.1542/peds.2018-3112"
       },
       "patterns": [
-        "\\b(i won't let you|i'm not going to let you|i will not let you|it's not okay to|it is not okay to|i can't let you|the rule is|we don't (hit|throw|kick|bite))\\b",
+        "\\b(i won't let|i'm not going to let|i will not let|i can't let) (you|anyone|him|her|them)\\b",
+        "\\b(it's not okay to|it is not okay to|the rule is|we don't (hit|throw|kick|bite|grab))\\b",
         "\\b(it's|it is) (time|bedtime) (to|for)\\b"
       ]
     },

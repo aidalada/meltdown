@@ -1,7 +1,7 @@
 import { expect, it } from "vitest";
 import { allowRequest } from "./rate-limit";
 
-it.each([["turn", 40], ["scenario", 15], ["debrief", 15]] as const)(
+it.each([["turn", 40], ["scenario", 15], ["debrief", 15], ["coach", 30]] as const)(
   "enforces the rolling ten-minute limit for %s", (route, limit) => {
     for (let i = 0; i < limit; i++) expect(allowRequest(route, "rolling", i * 100)).toBe(true);
     expect(allowRequest(route, "rolling", 599_999)).toBe(false);
