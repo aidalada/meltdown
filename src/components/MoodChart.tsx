@@ -47,7 +47,7 @@ export function MoodChart({ points }: { points: ChartPoint[] }) {
         <text x={L + 6} y={y(80) - 6} fill="#17704A" fontWeight={600} style={TEXT}>{copy.bands.calm}</text>
         {points.map((p, i) => (
           <text key={`x${i}`} x={x(i)} y={H - 8} textAnchor="middle" fill="#655C55" style={TEXT}>
-            {i === 0 ? copy.debrief.statStart : p.turn}
+            {i === 0 ? copy.debrief.chartStart : p.turn}
           </text>
         ))}
         <polyline points={points.map((p, i) => `${x(i)},${y(p.mood)}`).join(" ")} fill="none" stroke="#1B2140" strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />

@@ -66,11 +66,11 @@ function Sos() {
   return (
     <div className="wrap wrap-narrow grid grid-cols-[minmax(0,1fr)] gap-6 py-6">
       <header className="grid gap-2">
-        <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-muted">
+        <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-muted">
           <ChildBadge years={profile.ageYears} size={32} girl={facts.gender === "girl"} />
           {copy.sos.forChild(facts.named ? profile.childName : copy.coach.yourChildTitle, age, copy.setup.temperaments[profile.temperament])}
           <Link href="/practice" className="font-semibold">{copy.sos.change}</Link>
-        </p>
+        </div>
         <h1 className="text-[clamp(30px,7vw,48px)]">{copy.sos.heading}</h1>
       </header>
 

@@ -12,6 +12,7 @@ import { RewriteCard } from "@/components/RewriteCard";
 import { PageSkeleton } from "@/components/Skeleton";
 import { TechniqueCard } from "@/components/TechniqueCard";
 import { useTexts } from "@/content/i18n";
+import type { Texts } from "@/content/locale";
 import { useHydrated } from "@/hooks/useHydrated";
 import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
@@ -40,12 +41,26 @@ function workedTags(session: Session): [PositiveTag, number][] {
   return [...totals].sort((a, b) => b[1] - a[1]);
 }
 
+const NEXT_TAGS: PositiveTag[] = ["name_feeling", "offer_choice", "when_then", "connect_first"];
+
+/** The model and the backup coach write the summary in English; other languages get one built from the turns. */
+function localSummary(session: Session, outcome: Outcome, turns: number, texts: Texts): string {
+  const worked = workedTags(session);
+  if (outcome === "calm_reached") {
+    const best = worked[0]?.[0] ?? "name_feeling";
+    return texts.copy.debrief.summaryCalm(session.scenario.childName, turns, texts.technique(best).label);
+  }
+  const next = NEXT_TAGS.find((tag) => !worked.some(([t]) => t === tag)) ?? "name_feeling";
+  return texts.copy.debrief.summaryNext(turns, texts.technique(next).shortTip);
+}
+
 function finalOutcome(s: Session): Exclude<Outcome, "continue"> {
   return s.outcome === "continue" ? "ended_by_parent" : s.outcome;
 }
 
 function Debrief({ id }: { id: string }) {
-  const { copy, scenario } = useTexts();
+  const texts = useTexts();
+  const { copy, scenario } = texts;
   const router = useRouter();
   const [session, setSession] = useState<Session | null>(() => loadSession(id));
   const [source, setSource] = useState<"ai" | "fallback" | null>(() => loadSession(id)?.debrief?.source ?? null);
@@ -111,7 +126,7 @@ function Debrief({ id }: { id: string }) {
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-2">
           <section className="card db-section">
-            <p className="db-summary">{d.summary}</p>
+            <p className="db-summary">{texts.locale === "en" ? d.summary : localSummary(s, d.stats.outcome, d.stats.turns, texts)}</p>
             <div className="flex flex-wrap items-center gap-2">
               <div className="stat-box"><span className="k">{copy.debrief.statTurns}</span><span className="v">{d.stats.turns}</span></div>
               <div className="stat-box">
