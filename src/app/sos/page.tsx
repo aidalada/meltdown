@@ -99,7 +99,7 @@ function Sos() {
                 <button type="button" className="btn btn-secondary" onClick={() => ask(state)}>
                   <Icon name="repeat" size={18} />{copy.sos.another}
                 </button>
-                <Link className="btn btn-primary btn-wrap" href="/">{copy.coach.cta}</Link>
+                <Link className="btn btn-primary btn-wrap" href="/coach">{copy.coach.cta}</Link>
               </div>
             </div>
           )}
@@ -132,7 +132,7 @@ function Sos() {
 
       <div className="flex flex-wrap items-center gap-2.5">
         <button type="button" className="btn btn-secondary btn-lg" onClick={back}>{copy.sos.back}</button>
-        <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/">
+        <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/coach">
           <SebastianAvatar size={32} decorative />
           {copy.coach.sosLink}
         </Link>

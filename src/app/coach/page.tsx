@@ -1,6 +1,6 @@
 import { CoachChat } from "@/components/CoachChat";
 
-/** Same screen as the home page; kept so older links and /coach?morning=1 still work. */
+/** Sebastian's chat. The home page (/) is a short welcome with one button that leads here. */
 export default function CoachPage() {
   return <CoachChat />;
 }

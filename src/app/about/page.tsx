@@ -41,7 +41,7 @@ export default async function AboutPage() {
           <h1 className="text-[clamp(34px,6.2vw,56px)]">{copy.landing.title}</h1>
           <p className="max-w-[30em] text-lg text-muted">{copy.landing.subtitle}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-3">
-            <Link className="btn btn-primary btn-lg btn-wrap pl-2" href="/">
+            <Link className="btn btn-primary btn-lg btn-wrap pl-2" href="/coach">
               <SebastianAvatar size={36} decorative />
               {copy.landing.cta}
             </Link>
@@ -125,7 +125,7 @@ export default async function AboutPage() {
 
       <section className="mt-12 flex flex-col items-center gap-3.5 text-center">
         <h2 className="text-[28px]">{copy.brand.tagline}</h2>
-        <Link className="btn btn-primary btn-lg btn-wrap pl-2" href="/">
+        <Link className="btn btn-primary btn-lg btn-wrap pl-2" href="/coach">
           <SebastianAvatar size={36} decorative />
           {copy.landing.cta}
         </Link>
