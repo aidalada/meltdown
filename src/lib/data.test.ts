@@ -98,6 +98,15 @@ describe("scenarios", () => {
     }
   });
 
+  it("resolves every requested coach preset", () => {
+    const presetIds = new Set(PRESETS.map(({ id }) => id));
+    for (const { id, expectPreset } of EvalCasesFileSchema.parse(evalCasesJson).coachCases) {
+      if (expectPreset !== undefined && expectPreset !== "none") {
+        expect(presetIds.has(expectPreset), id).toBe(true);
+      }
+    }
+  });
+
   it.each([
     [2, "toddler"], [3, "toddler"], [4, "preschool"], [5, "preschool"],
     [6, "school"], [8, "school"], [9, "preteen"], [12, "preteen"],

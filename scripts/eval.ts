@@ -4,7 +4,8 @@ import rawCases from "../src/data/eval-cases.json";
 import { PRESETS } from "../src/lib/data";
 import { normalizeText, wordCount } from "../src/lib/engine/text";
 import {
-  ApiResponseSchema, EvalCasesFileSchema, ScenarioResultSchema, TurnResultSchema, type EvalTurnCase,
+  ApiResponseSchema, CoachReplySchema, EvalCasesFileSchema, ScenarioResultSchema, TurnResultSchema,
+  type CoachRequest, type EvalTurnCase,
 } from "../src/lib/schemas";
 import type { ScenarioRequest, ScenarioResult, TurnRequest } from "../src/lib/types";
 
@@ -49,6 +50,10 @@ function row(id: string, pass: boolean, actual: string, expected: string, words:
 
 function failedRequest(id: string, status: number, expected: string, ms: number): void {
   row(id, false, status === 200 ? "invalid response" : `HTTP ${status}`, expected, "—", "—", ms);
+  checkRateLimit(id, status);
+}
+
+function checkRateLimit(id: string, status: number): void {
   if (status === 429) throw new Error(`${id}: HTTP 429 — достигнут лимит запросов. Прогон остановлен.`);
 }
 
@@ -56,14 +61,15 @@ function describeScenario(result: ScenarioResult | typeof cases.scenarioCases[nu
   return result.kind === "safety" ? `safety (${result.safety})` : result.kind;
 }
 
-async function main(): Promise<void> {
-  const base = baseUrl();
+async function evalPractice(base: URL, only?: "turn" | "scenario"): Promise<void> {
+  const turnCases = only === "scenario" ? [] : cases.turnCases;
+  const scenarioCases = only === "turn" ? [] : cases.scenarioCases;
   let tags = 0, replies = 0, scenarios = 0, fallback = 0;
   const latencies: number[] = [];
 
   console.log("| id | PASS/FAIL | tags / kind | expected | words | source | latencyMs |");
   console.log("| --- | --- | --- | --- | ---: | --- | ---: |");
-  for (const item of cases.turnCases) {
+  for (const item of turnCases) {
     const req = turnRequest(item);
     const res = await postCase(base, "/api/turn", req, TurnResultSchema);
     const expected = item.expectTags.join(", ");
@@ -86,7 +92,7 @@ async function main(): Promise<void> {
   }
 
   const { childName, temperament } = PRESETS[0];
-  for (const item of cases.scenarioCases) {
+  for (const item of scenarioCases) {
     const req: ScenarioRequest = { text: item.text, ageYears: item.ageYears, childName, temperament };
     const res = await postCase(base, "/api/scenario", req, ScenarioResultSchema);
     const expected = describeScenario(item.expect);
@@ -101,17 +107,69 @@ async function main(): Promise<void> {
     row(item.id, pass, actual, expected, "—", res.source, res.latencyMs);
   }
 
-  const count = cases.turnCases.length;
-  console.log(`tags ${tags}/${count}, replies ${replies}/${count}, scenarios ${scenarios}/${cases.scenarioCases.length}, fallback ${fallback}`);
+  const count = turnCases.length;
+  const summary = [];
+  if (count) summary.push(`tags ${tags}/${count}`, `replies ${replies}/${count}`);
+  if (scenarioCases.length) summary.push(`scenarios ${scenarios}/${scenarioCases.length}`);
+  console.log([...summary, `fallback ${fallback}`].join(", "));
   if (latencies.length) {
     latencies.sort((a, b) => a - b);
     const percentile = (p: number) => latencies[Math.ceil(latencies.length * p) - 1];
     const mean = latencies.reduce((sum, ms) => sum + ms, 0) / latencies.length;
     console.log(`turn latencyMs: p50 ${percentile(0.5)}, p90 ${percentile(0.9)}, mean ${mean.toFixed(1)}`);
-  } else {
+  } else if (count) {
     console.log("turn latencyMs: p50 —, p90 —, mean —");
   }
-  if (tags < 17 || replies < count || fallback > 0) process.exitCode = 1;
+  if ((count > 0 && (tags < 17 || replies < count)) || fallback > 0 ||
+      (only === "scenario" && scenarios < scenarioCases.length)) process.exitCode = 1;
+}
+
+async function evalCoach(base: URL): Promise<void> {
+  const memory: CoachRequest["memory"] = {
+    child: null, rehearsals: 0, calmReached: 0, struggle: null, lastScenarioTitle: null, planPhrase: null,
+  };
+  const cyrillic = /\p{Script=Cyrillic}/u;
+  const latencies: number[] = [];
+  let passed = 0;
+  console.log("| id | PASS/FAIL | safety | technique | preset | say words | source | latencyMs |");
+  console.log("| --- | --- | --- | --- | --- | ---: | --- | ---: |");
+  for (const item of cases.coachCases) {
+    const req: CoachRequest = { text: item.text, locale: item.locale, memory, history: [] };
+    const res = await postCase(base, "/api/coach", req, CoachReplySchema);
+    if (!res.ok) {
+      const reason = res.status === 200 ? "invalid response" : `HTTP ${res.status}`;
+      console.log(`| ${item.id} | FAIL | ${reason} | — | — | — | — | ${res.latencyMs} |`);
+      checkRateLimit(item.id, res.status);
+      continue;
+    }
+    latencies.push(res.latencyMs);
+    const { safety, lead, technique, say, preset } = res.data;
+    const words = say === undefined ? 0 : wordCount(normalizeText(say));
+    const sayOk = item.expectNoSay ? say === undefined
+      : say !== undefined && !cyrillic.test(say) && words > 0 && words <= 18;
+    const presetOk = item.expectPreset === undefined ||
+      (item.expectPreset === "none" ? preset === undefined : preset === item.expectPreset);
+    const pass = safety === item.expectSafety && (item.expectSafety !== "none" || res.source === "ai") &&
+      (!item.expectTechniques || item.expectTechniques.includes(technique)) &&
+      !item.forbidTechniques?.includes(technique) && presetOk && sayOk &&
+      cyrillic.test(lead) === (item.locale === "ru");
+    if (pass) passed++;
+    console.log(`| ${item.id} | ${pass ? "PASS" : "FAIL"} | ${safety} | ${technique} | ${preset ?? "—"} | ${words} | ${res.source} | ${res.latencyMs} |`);
+  }
+  console.log(`coach ${passed}/${cases.coachCases.length}`);
+  latencies.sort((a, b) => a - b);
+  console.log(`coach latencyMs: p50 ${latencies[Math.ceil(latencies.length / 2) - 1] ?? "—"}`);
+  if (passed < 8) process.exitCode = 1;
+}
+
+async function main(): Promise<void> {
+  const base = baseUrl();
+  const only = process.argv.slice(2).find((arg) => arg.startsWith("--only="))?.slice("--only=".length);
+  if (only !== undefined && only !== "turn" && only !== "scenario" && only !== "coach") {
+    throw new Error("--only must be turn, scenario or coach");
+  }
+  if (only !== "coach") await evalPractice(base, only);
+  if (only === undefined || only === "coach") await evalCoach(base);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

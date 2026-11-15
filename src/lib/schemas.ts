@@ -313,9 +313,21 @@ const evalScenarioCaseSchema = z.object({
 });
 export type EvalScenarioCase = z.infer<typeof evalScenarioCaseSchema>;
 
+const evalCoachCaseSchema = z.object({
+  id: z.string(),
+  locale: LocaleSchema,
+  text: CoachRequestSchema.shape.text,
+  expectSafety: SafetySchema,
+  expectTechniques: z.array(PositiveTagSchema).optional(),
+  forbidTechniques: z.array(PositiveTagSchema).optional(),
+  expectPreset: z.string().min(1).optional(),
+  expectNoSay: z.boolean().optional(),
+});
+
 export const EvalCasesFileSchema = z.object({
   version: z.literal(1),
   turnCases: z.array(evalTurnCaseSchema),
   scenarioCases: z.array(evalScenarioCaseSchema),
+  coachCases: z.array(evalCoachCaseSchema),
 });
 export type EvalCasesFile = z.infer<typeof EvalCasesFileSchema>;
