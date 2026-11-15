@@ -1,4 +1,4 @@
-import { ageGroupOf, FALLBACK_LINES, PRESETS, TECHNIQUES, TECHNIQUE_BY_TAG } from "../data";
+import { ageGroupOf, FALLBACK_LINES, PRESETS, presetFitsAge, TECHNIQUES, TECHNIQUE_BY_TAG } from "../data";
 import { detectSafety } from "../safety";
 import type { DebriefModelOutput, ScenarioModelOutput } from "../schemas";
 import type { DebriefRequest, PositiveTag, ScenarioRequest, TagHit, TurnModelOutput, TurnRequest } from "../types";
@@ -41,13 +41,15 @@ export function heuristicTurnOutput(req: TurnRequest): TurnModelOutput {
   };
 }
 
-const scenarioKeywords: [RegExp, string][] = [
-  [/\b(teeth|brush)/i, "teeth-bedtime"],
-  [/\b(park|playground|slide|leave)/i, "leaving-playground"],
-  [/\b(dress|clothes|shoes|shirt|socks)/i, "getting-dressed"],
-  [/\b(tablet|ipad|screen|tv|game)/i, "screen-time-off"],
-  [/\b(brother|sister|sibling|share|toy)/i, "sibling-fight"],
-  [/\b(homework|math|reading|worksheet)/i, "homework-meltdown"],
+const scenarioKeywords: [RegExp, string[]][] = [
+  [/\b(teeth|brush)/i, ["teeth-bedtime"]],
+  [/\b(park|playground|slide|leave)/i, ["leaving-playground"]],
+  [/\b(homework|math|reading|worksheet)/i, ["homework-meltdown"]],
+  [/\b(phone|online|tiktok|instagram|snapchat|texting)/i, ["phone-bedtime", "screen-time-off"]],
+  [/\b(school|bus|alarm|wake up|out of bed)/i, ["school-morning"]],
+  [/\b(dress|clothes|shoes|daycare|preschool)/i, ["getting-dressed", "school-morning"]],
+  [/\b(tablet|ipad|screen|tv|game)/i, ["screen-time-off"]],
+  [/\b(sibling|brother|sister|share|toy)/i, ["sibling-fight"]],
 ];
 
 // Reject clear requests for unrelated content before they can match a preset keyword.
@@ -55,8 +57,9 @@ const unrelatedRequest = /^(?:please[\s,]+)?(?:(?:can|could|would) you\s+)?(?:wr
 
 export function heuristicScenarioOutput(req: ScenarioRequest): ScenarioModelOutput {
   const text = normalizeText(req.text);
-  const match = scenarioKeywords.find(([pattern]) => pattern.test(text));
-  const preset = match && PRESETS.find((scenario) => scenario.id === match[1]);
+  const id = scenarioKeywords.flatMap(([pattern, candidates]) => pattern.test(text) ? candidates : [])
+    .find((candidate) => presetFitsAge(candidate, req.ageYears));
+  const preset = PRESETS.find((scenario) => scenario.id === id);
   return {
     on_topic: !unrelatedRequest.test(text),
     safety: detectSafety(text),

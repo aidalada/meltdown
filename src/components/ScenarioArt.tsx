@@ -1,4 +1,4 @@
-import type { JSX } from "react";
+import { useId, type JSX } from "react";
 
 /*
  * Illustrations for the common moments. Drawn here in SVG, so there are no photo rights to clear
@@ -9,15 +9,16 @@ const W = 320;
 const H = 150;
 
 function Sky({ id, from, to }: { id: string; from: string; to: string }) {
+  const gradientId = `sky-${id}-${useId()}`;
   return (
     <>
       <defs>
-        <linearGradient id={`sky-${id}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor={from} />
           <stop offset="1" stopColor={to} />
         </linearGradient>
       </defs>
-      <rect width={W} height={H} fill={`url(#sky-${id})`} />
+      <rect width={W} height={H} fill={`url(#${gradientId})`} />
     </>
   );
 }
@@ -137,6 +138,8 @@ const SCENES: Record<string, () => JSX.Element> = {
   "screen-time-off": Screens,
   "sibling-fight": Toys,
   "homework-meltdown": Homework,
+  "school-morning": Dressing,
+  "phone-bedtime": Screens,
 };
 
 export function ScenarioArt({ id, className }: { id: string; className?: string }) {

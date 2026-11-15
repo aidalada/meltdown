@@ -81,6 +81,8 @@ export const SCENARIOS_RU: { byId: Record<string, ScenarioText>; generic: Record
     "screen-time-off": { title: "Выключить планшет", setting: "Гостиная, 18:00, ужин готов" },
     "sibling-fight": { title: "Ссора из-за игрушки", setting: "Игровая, утро субботы" },
     "homework-meltdown": { title: "Истерика из-за домашки", setting: "Кухонный стол, 19:00, задание на завтра" },
+    "school-morning": { title: "Сборы в школу", setting: "Спальня, 7:35, школьный автобус через 15 минут" },
+    "phone-bedtime": { title: "Убрать телефон перед сном", setting: "Спальня, 22:00, завтра в школу" },
   },
   /** The built-in coach's wording for a custom moment it couldn't match to a preset. */
   generic: { "A hard moment": "Трудный момент", "At home": "Дома" },

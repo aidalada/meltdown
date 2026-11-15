@@ -10,7 +10,7 @@ import { postScenario, RateLimitedError } from "@/lib/api-client";
 import { rangeOf, yearsForChoice, type AgeChoice } from "@/lib/age";
 import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, extractChild, mergeChildFacts, reminderIcs } from "@/lib/coach";
 import { askCoach, coachRequest } from "@/lib/coach-client";
-import { ageGroupOf, PRESETS } from "@/lib/data";
+import { ageGroupOf, PRESETS, presetFitsAge } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import {
   addCheckin, DEFAULT_PROFILE, forgetEverything, listSessions, loadCheckins, loadChildFacts, loadCoachThread, loadPlan, loadProfile,
@@ -92,7 +92,7 @@ export function useCoach() {
       message = { role: "coach", at: clock().toISOString(), lines: [copy.coach.safetyLine] };
     } else if (ai && local.message.role === "coach") {
       // The model's words and choice of technique; the why and the source still come from techniques.json.
-      message = { ...local.message, lines: [ai.lead], technique: ai.technique, say: ai.say, preset: ai.preset ?? local.message.preset };
+      message = { ...local.message, lines: [ai.lead], technique: ai.technique, say: ai.say, preset: ai.preset };
     }
     if (safety === null && proposed?.changed) {
       saveProfile(proposed.profile);
@@ -147,7 +147,8 @@ export function useCoach() {
     if (rehearsing) return;
     setRehearsing(true);
     const profile = loadProfile() ?? DEFAULT_PROFILE;
-    const preset = texts.locale === "ru" ? PRESETS.find((p) => p.id === presetId) : undefined;
+    const preset = texts.locale === "ru" && presetId && presetFitsAge(presetId, profile.ageYears)
+      ? PRESETS.find((p) => p.id === presetId) : undefined;
     if (preset) {
       begin({ ...preset, childName: profile.childName, ageYears: profile.ageYears, ageGroup: ageGroupOf(profile.ageYears), temperament: profile.temperament });
       return;

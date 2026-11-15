@@ -1,8 +1,8 @@
 import { textsFor } from "@/content/locale";
 import type { CoachMemory } from "@/types/coach";
-import { coachReply } from "../coach";
+import { coachReply, extractChild } from "../coach";
 import type { CoachApiReply } from "../coach-client";
-import { PRESETS } from "../data";
+import { PRESETS, presetFitsAge } from "../data";
 import { maxSafety } from "../safety";
 import type { CoachModelOutput, CoachRequest } from "../schemas";
 
@@ -65,7 +65,10 @@ export function finalizeCoach(req: CoachRequest, out: CoachModelOutput, local: C
   const rightLanguage = req.locale === "ru" ? CYRILLIC.test(lead) : !CYRILLIC.test(lead);
   const say = clean(out.say);
   const sayOk = say.length > 0 && say.length <= MAX_SAY && !CYRILLIC.test(say);
-  const preset = PRESETS.some((p) => p.id === out.preset) ? out.preset : local.preset;
+  const age = req.memory.child?.ageYears ?? extractChild(req.text).ageYears;
+  const preset = [out.preset, local.preset].find((id) =>
+    id !== undefined && PRESETS.some((p) => p.id === id) && (age === undefined || presetFitsAge(id, age))
+  );
   return {
     safety: "none",
     lead: lead && rightLanguage ? lead : local.lead,
