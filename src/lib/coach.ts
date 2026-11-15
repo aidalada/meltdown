@@ -4,10 +4,10 @@ import { MAX_SCENARIO_TEXT } from "./constants";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
 import { heuristicTags } from "./engine/heuristics";
 import { localDate } from "./progress";
-import { detectSafety, maxSafety } from "./safety";
+import { detectSafety } from "./safety";
 import { CHILD_NAMES } from "./data";
 import type { Checkin, ChildFacts, SavedPlan } from "./storage";
-import type { NegativeTag, PositiveTag, Profile, Safety, Session, TechniqueTag } from "./types";
+import type { NegativeTag, PositiveTag, Profile, Session, TechniqueTag } from "./types";
 
 /*
  * Sebastian, the local coach. Until the team ships /api/coach this file answers on the
@@ -22,7 +22,6 @@ import type { NegativeTag, PositiveTag, Profile, Safety, Session, TechniqueTag }
 const EN = textsFor("en");
 const NEGATIVE: readonly TechniqueTag[] = ["threat", "yell_or_insult", "lecture", "dismiss_feeling", "why_question", "bribe"];
 const isNegative = (tag: TechniqueTag): tag is NegativeTag => NEGATIVE.includes(tag);
-const NO_LETTER_BEFORE = "(?<![а-яё])";
 
 /**
  * Common moments, the technique that usually helps most, and the preset whose plan phrases give an
@@ -69,21 +68,6 @@ const DESCRIBED: { tag: NegativeTag; en: RegExp; ru: RegExp }[] = [
   },
   { tag: "why_question", en: new RegExp(`${I_DID}(ask\\w* (?:him|her|them) why)`, "i"), ru: /(почему ты|зачем ты)/i },
 ];
-
-/** Russian crisis words. safety.ts (team B) is English-only, so Russian input is checked here as well. */
-const CRISIS_RU: { safety: Exclude<Safety, "none">; pattern: RegExp }[] = [
-  { safety: "parent_crisis", pattern: /(не хочу жить|покончить с собой|покончу с собой|убить себя|убью себя|суицид|хочу умереть|лучше бы меня не было)/i },
-  {
-    safety: "child_at_risk",
-    pattern: new RegExp(`${NO_LETTER_BEFORE}(?<!не )(ударил[аи]?|избил[аи]?|отлупил[аи]?|трясл[аи]|тряс|бью|била|бил) (его|её|ее|сына|дочь|дочку|ребенка|ребёнка|малыша)`, "i"),
-  },
-  { safety: "child_at_risk", pattern: /(не дышит|задыхается|без сознания|проглотил[аи]? (таблетк|лекарств|батарейк))/i },
-];
-
-function detectSafetyAnyLanguage(text: string): Safety {
-  const ru = CRISIS_RU.find((c) => c.pattern.test(text))?.safety ?? "none";
-  return maxSafety(detectSafety(text), ru);
-}
 
 /** Order to fall back through when the parent already used the suggested technique. */
 const FALLBACKS: PositiveTag[] = ["name_feeling", "offer_choice", "when_then", "connect_first", "playful"];
@@ -175,7 +159,7 @@ function suggest(negative: NegativeTag | undefined, used: PositiveTag[], topic: 
 export function coachReply(text: string, memory: CoachMemory, now: Date, t: Texts = EN): CoachReply {
   const c = t.copy.coach;
   const at = now.toISOString();
-  const safety = detectSafetyAnyLanguage(text);
+  const safety = detectSafety(text);
   if (safety !== "none") return { kind: "safety", safety, message: { role: "coach", at, lines: [c.safetyLine] } };
 
   const said = text.trim();
