@@ -1,5 +1,7 @@
 import type { NegativeTag, Outcome, PositiveTag, Temperament } from "@/lib/types";
 
+export type ChildGender = "girl" | "boy";
+
 /** One message in the coach thread. Stored in this browser only. */
 export type CoachMessage =
   | { role: "parent"; at: string; text: string }
@@ -21,11 +23,20 @@ export type CoachMessage =
       askAge?: boolean;
       /** Preset matching the moment, used to start a rehearsal without the API (Russian input). */
       preset?: string;
+      /** What Sebastian just learned about the child from this message, e.g. "Jessica, 7". */
+      remembered?: string;
     };
 
 /** What Sebastian knows, derived from the browser's own records. Nothing here leaves the device. */
 export interface CoachMemory {
-  child: { name: string; ageYears: number; temperament: Temperament } | null;
+  child: {
+    name: string;
+    ageYears: number;
+    temperament: Temperament;
+    /** False while the name is still the practice name; Sebastian then says "your child". */
+    named: boolean;
+    gender: ChildGender | null;
+  } | null;
   rehearsals: number;
   calmReached: number;
   lastSession: { scenarioId: string; title: string; outcome: Outcome } | null;

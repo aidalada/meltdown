@@ -74,7 +74,12 @@ export function coachRequest(text: string, locale: Locale, memory: CoachMemory, 
     text,
     locale,
     memory: {
-      child: memory.child,
+      // A practice name ("Max") is not the child's name: the model would call the child that.
+      child: memory.child && {
+        name: memory.child.named ? memory.child.name : "not told yet",
+        ageYears: memory.child.ageYears,
+        temperament: memory.child.temperament,
+      },
       rehearsals: memory.rehearsals,
       calmReached: memory.calmReached,
       struggle: memory.struggle,

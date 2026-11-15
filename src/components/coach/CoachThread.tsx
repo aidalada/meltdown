@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { AgePicker } from "@/components/AgePicker";
+import { ChildBadge } from "@/components/ChildBadge";
 import { Disclosure } from "@/components/Disclosure";
 import { Icon } from "@/components/Icon";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
@@ -23,6 +24,9 @@ interface CoachThreadProps {
   /** True while Sebastian still waits for the child's age. */
   pendingAge: boolean;
   rehearsing: boolean;
+  /** The practice child shown on the rehearse button. */
+  childYears?: number;
+  girl?: boolean;
   onPickAge(choice: AgeChoice): void;
   onCheckin(sessionId: string, result: Checkin["result"]): void;
   onRehearse(text: string, preset?: string): void;
@@ -34,7 +38,7 @@ const DAY_LABEL = {
 };
 const CHECKIN_ANSWERS: Checkin["result"][] = ["worked", "partly", "didnt"];
 
-export function CoachThread({ messages, typing, today, pendingCheckin, pendingAge, rehearsing, onPickAge, onCheckin, onRehearse }: CoachThreadProps) {
+export function CoachThread({ messages, typing, today, pendingCheckin, pendingAge, rehearsing, childYears = 4, girl = false, onPickAge, onCheckin, onRehearse }: CoachThreadProps) {
   const copy = useCopy();
   const locale = useLocale();
   const end = useRef<HTMLLIElement>(null);
@@ -59,20 +63,25 @@ export function CoachThread({ messages, typing, today, pendingCheckin, pendingAg
               <li className="msg msg-parent"><div className="bubble bubble-parent">{m.text}</div></li>
             ) : (
               <CoachBubble avatar={lastOfGroup} lines={m.lines}>
+                {m.remembered && <span className="memory-chip memory-chip-saved"><Icon name="heart" size={14} />{m.remembered}</span>}
                 {m.again && <span className="memory-chip"><Icon name="repeat" size={14} />{copy.coach.againShort}</span>}
                 {m.technique && <SayCard tag={m.technique} say={m.say} />}
-                {(m.rehearse || m.technique) && (
+                {m.rehearse && (
+                  <button type="button" className="rehearse-cta" disabled={rehearsing} onClick={() => m.rehearse && onRehearse(m.rehearse, m.preset)}>
+                    <span className="rehearse-cta-icon" aria-hidden="true"><Icon name="play" size={22} /></span>
+                    <span className="rehearse-cta-text">
+                      <strong>{rehearsing ? copy.coach.rehearsing : copy.coach.rehearseTitle}</strong>
+                      <small>{copy.coach.rehearseSub}</small>
+                    </span>
+                    <span className="rehearse-cta-kid" aria-hidden="true"><ChildBadge years={childYears} size={44} girl={girl} /></span>
+                  </button>
+                )}
+                {m.technique && (
                   <Disclosure>
                     <div className="flex flex-wrap items-center gap-2">
-                      {m.rehearse && (
-                        <button type="button" className="btn btn-primary" disabled={rehearsing} onClick={() => m.rehearse && onRehearse(m.rehearse, m.preset)}>
-                          <Icon name="play" size={18} />
-                          {rehearsing ? copy.coach.rehearsing : copy.coach.rehearse}
-                        </button>
-                      )}
-                      {m.technique && <Disclosure.Button>{copy.coach.why}</Disclosure.Button>}
+                      <Disclosure.Button>{copy.coach.why}</Disclosure.Button>
                     </div>
-                    {m.technique && <Disclosure.Panel><WhyItWorks tag={m.technique} /></Disclosure.Panel>}
+                    <Disclosure.Panel><WhyItWorks tag={m.technique} /></Disclosure.Panel>
                   </Disclosure>
                 )}
                 {m.askAge && pendingAge && <AgePicker variant="chips" value={null} onPick={onPickAge} />}

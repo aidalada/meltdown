@@ -172,6 +172,7 @@ const CoachMessageSchema = z.discriminatedUnion("role", [
     checkin: z.string().optional(),
     askAge: z.boolean().optional(),
     preset: z.string().optional(),
+    remembered: z.string().optional(),
   }),
 ]) satisfies z.ZodType<CoachMessage>;
 
@@ -184,12 +185,26 @@ export function saveCoachThread(messages: CoachMessage[], kv?: KV | null): void 
   write(resolve(kv), COACH_KEY, messages.slice(-COACH_KEEP));
 }
 
+const CHILD_KEY = `${PREFIX}child`;
+const ChildFactsSchema = z.object({ named: z.boolean(), gender: z.enum(["girl", "boy"]).nullable() });
+/** What the parent told Sebastian about the child that the profile cannot hold: is the name real, girl or boy. */
+export type ChildFacts = z.infer<typeof ChildFactsSchema>;
+export const NO_FACTS: ChildFacts = { named: false, gender: null };
+
+export function loadChildFacts(kv?: KV | null): ChildFacts {
+  return read(resolve(kv), CHILD_KEY, ChildFactsSchema) ?? NO_FACTS;
+}
+
+export function saveChildFacts(facts: ChildFacts, kv?: KV | null): void {
+  write(resolve(kv), CHILD_KEY, facts);
+}
+
 /** "Forget everything": removes every record this app keeps in the browser. */
 export function forgetEverything(kv?: KV | null): void {
   const store = resolve(kv);
   if (!store) return;
   const ids = read(store, KEYS.sessions, IndexSchema) ?? [];
-  const keys = [...ids.map(KEYS.session), KEYS.sessions, KEYS.profile, KEYS.plan, KEYS.trial, CHECKINS_KEY, COACH_KEY];
+  const keys = [...ids.map(KEYS.session), KEYS.sessions, KEYS.profile, KEYS.plan, KEYS.trial, CHECKINS_KEY, COACH_KEY, CHILD_KEY];
   for (const key of keys) {
     try {
       store.removeItem(key);

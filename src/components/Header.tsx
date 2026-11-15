@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useCopy } from "@/content/i18n";
 import { useOffline } from "@/hooks/useOffline";
-import { MOOD_COLOR } from "./ChildAvatar";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { SebastianAvatar } from "./SebastianAvatar";
 
@@ -14,11 +13,9 @@ export function Header() {
     <header>
       <div className="wrap flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 py-2">
         <Link className="logo" href="/" aria-label={`${copy.brand.name} home`}>
-          <span className="logo-mark" aria-hidden="true">
-            <i style={{ background: MOOD_COLOR.meltdown }} />
-            <i style={{ background: MOOD_COLOR.grumpy }} />
-            <i style={{ background: MOOD_COLOR.calm }} />
-          </span>
+          {/* Same picture as the app icon, so the home-screen icon and the site look like one brand. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="" width={34} height={34} className="logo-img" />
           {copy.brand.name}
         </Link>
         {/* Below 768 px the BottomNav tab bar carries navigation, so the header keeps the logo and language. */}

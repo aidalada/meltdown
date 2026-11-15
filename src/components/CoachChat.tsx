@@ -60,6 +60,8 @@ function Chat() {
           pendingCheckin={coach.pendingCheckin}
           pendingAge={coach.pendingAge}
           rehearsing={coach.rehearsing}
+          childYears={coach.memory.child?.ageYears}
+          girl={coach.memory.child?.gender === "girl"}
           onPickAge={coach.pickAge}
           onCheckin={coach.checkin}
           onRehearse={(text, preset) => void coach.rehearse(text, preset)}
