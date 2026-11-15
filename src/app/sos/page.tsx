@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChildBadge } from "@/components/ChildBadge";
-import { WavesArt } from "@/components/ScenarioArt";
 import { Icon } from "@/components/Icon";
+import { WavesArt } from "@/components/ScenarioArt";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { PageSkeleton } from "@/components/Skeleton";
 import { useTexts } from "@/content/i18n";
-import { sosPhrases } from "@/content/sos-phrases";
+import { nextSosPick, SOS_STATES, sosText, type SosPick, type SosState } from "@/content/sos-coach";
 import { useBreathSound } from "@/hooks/useBreathSound";
 import { useHydrated } from "@/hooks/useHydrated";
 import { choiceOf, rangeOf } from "@/lib/age";
@@ -21,24 +21,47 @@ export default function SosPage() {
   return <Sos />;
 }
 
+/** How long Sebastian "types" before the line appears, so it reads as an answer. */
+const TYPING_MS = 650;
+
 /**
- * Smart SOS: a cheat sheet for the middle of a meltdown. Three large phrases to say right now,
- * chosen for the child's age and temperament from the browser profile. No reading, no choices.
+ * SOS for the parent, in the middle of a meltdown. Two big buttons say how the parent feels right now;
+ * Sebastian answers with a short, calming line (a new one each time) and invites them to talk it
+ * through in the chat later. The waves sound helps them breathe.
  */
 function Sos() {
-  const { copy, locale, technique } = useTexts();
+  const { copy, locale } = useTexts();
   const router = useRouter();
   const [profile] = useState(() => loadProfile() ?? DEFAULT_PROFILE);
   const [rehearsed] = useState(() => loadPlan()?.phrases ?? []);
   const [facts] = useState(loadChildFacts);
+  const [state, setState] = useState<SosState | null>(null);
+  const [pick, setPick] = useState<SosPick | null>(null);
+  const [typing, setTyping] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const answer = useRef<HTMLDivElement>(null);
   const sound = useBreathSound();
-  const phrases = sosPhrases(profile.ageYears, profile.temperament);
   const age = copy.setup.ageRange(rangeOf(choiceOf(profile.ageYears)));
+
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+
+  function ask(next: SosState) {
+    setPick(nextSosPick(next, state === next ? pick : null));
+    setState(next);
+    setTyping(true);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      setTyping(false);
+      answer.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }, TYPING_MS);
+  }
 
   function back() {
     if (window.history.length > 1) router.back();
     else router.push("/");
   }
+
+  const reply = state && pick ? sosText(locale, state, pick) : null;
 
   return (
     <div className="wrap wrap-narrow grid grid-cols-[minmax(0,1fr)] gap-6 py-6">
@@ -48,15 +71,40 @@ function Sos() {
           {copy.sos.forChild(facts.named ? profile.childName : copy.coach.yourChildTitle, age, copy.setup.temperaments[profile.temperament])}
           <Link href="/practice" className="font-semibold">{copy.sos.change}</Link>
         </p>
-        <h1 className="text-[clamp(30px,7vw,48px)]">{copy.sos.sayNow}</h1>
+        <h1 className="text-[clamp(30px,7vw,48px)]">{copy.sos.heading}</h1>
       </header>
 
-      <div className="sos-coach">
-        <SebastianAvatar size={48} decorative />
-        <div className="bubble bubble-coach">
-          {copy.sos.calmLines.map((line) => <p key={line}>{line}</p>)}
+      <section className="grid gap-4" aria-labelledby="sos-question">
+        <h2 id="sos-question" className="text-center text-[20px]">{copy.sos.stateQuestion}</h2>
+        <div className="sos-states">
+          {SOS_STATES.map((s) => (
+            <button key={s} type="button" className={`sos-round sos-round-${s}`} aria-pressed={state === s} onClick={() => ask(s)}>
+              <Icon name={s === "panic" ? "sos" : "flame"} size={40} />
+              <span>{copy.sos.states[s]}</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
+
+      {state && (
+        <div ref={answer} className="sos-answer" aria-live="polite">
+          <SebastianAvatar size={56} decorative />
+          {typing ? (
+            <div className="bubble bubble-coach typing" role="status" aria-label={copy.coach.typing}><i /><i /><i /></div>
+          ) : reply && (
+            <div className="sos-answer-card">
+              <p className="sos-answer-line">{reply.line}</p>
+              <p className="sos-answer-ending">{reply.ending}</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className="btn btn-secondary" onClick={() => ask(state)}>
+                  <Icon name="repeat" size={18} />{copy.sos.another}
+                </button>
+                <Link className="btn btn-primary btn-wrap" href="/">{copy.coach.cta}</Link>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <button type="button" className="waves-btn" aria-pressed={sound.on} onClick={sound.toggle}>
         <WavesArt playing={sound.on} className="waves-art" />
@@ -68,19 +116,6 @@ function Sos() {
           </span>
         </span>
       </button>
-
-      <ol className="sos-list">
-        {phrases.map((p, i) => (
-          <li key={p.phrase} className="sos-card">
-            <span className="sos-step" aria-hidden="true">{i + 1}</span>
-            <div className="grid min-w-0 gap-1.5">
-              <p className="sos-phrase" lang="en">{p.phrase}</p>
-              {locale === "ru" && <p className="sos-note text-[15px]">{p.ru}</p>}
-              <p className="sos-note text-[13px] font-semibold">{technique(p.technique).label}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
 
       {rehearsed.length > 0 && (
         <section className="grid gap-2" aria-labelledby="sos-rehearsed">

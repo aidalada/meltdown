@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { useState } from "react";
+import { GrowingChild } from "@/components/GrowingChild";
 import { SkillRadar } from "@/components/SkillRadar";
 import { PageSkeleton } from "@/components/Skeleton";
 import { useCopy, useTexts } from "@/content/i18n";
 import { useHydrated } from "@/hooks/useHydrated";
 import { track } from "@/lib/analytics";
-import { localDate, skillScores, streakDays } from "@/lib/progress";
-import { addCheckin, listSessions, loadCheckins, loadPlan, type Checkin } from "@/lib/storage";
+import { childGrowth, localDate, skillScores, streakDays } from "@/lib/progress";
+import { addCheckin, listSessions, loadCheckins, loadChildFacts, loadPlan, type Checkin } from "@/lib/storage";
 import type { Session } from "@/lib/types";
 
 export default function ProgressPage() {
@@ -93,6 +94,8 @@ function Progress() {
   const [sessions] = useState(() => listSessions().filter((s) => s.turns.length > 0));
   const [streak] = useState(() => streakDays(sessions, new Date()));
   const [skills] = useState(() => skillScores(sessions));
+  const [growth] = useState(() => childGrowth(sessions));
+  const [girl] = useState(() => loadChildFacts().gender === "girl");
 
   return (
     <div className="wrap wrap-narrow">
@@ -101,6 +104,7 @@ function Progress() {
         {streak > 0 && <span className="pill pill-good">{copy.progress.streak(streak)}</span>}
       </div>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
+        <GrowingChild growth={growth} girl={girl} />
         <CheckinCard />
         <section className="card db-section" aria-labelledby="skills-title">
           <h2 id="skills-title" className="text-[22px]">{copy.progress.skillsTitle}</h2>

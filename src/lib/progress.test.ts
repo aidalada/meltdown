@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { first30Stats, localDate, skillScores, streakDays } from "./progress";
+import { childGrowth, first30Stats, localDate, skillScores, streakDays } from "./progress";
 import { addCheckin, loadCheckins, type KV } from "./storage";
 import type { Session, TechniqueTag, Turn } from "./types";
 
@@ -81,5 +81,35 @@ describe("skillScores", () => {
       expect(value).toBeGreaterThanOrEqual(0);
       expect(value).toBeLessThanOrEqual(100);
     }
+  });
+});
+
+describe("childGrowth", () => {
+  const good = (tag: Turn["tags"][number]["tag"]) => turn("ok", 8, tag);
+  const calmSession = (createdAt: string) => session(createdAt, [good("name_feeling"), good("calm_limit"), good("offer_choice"), good("when_then")]);
+
+  it("starts as an upset baby before any rehearsal", () => {
+    const g = childGrowth([]);
+    expect(g).toMatchObject({ stage: "baby", mood: "upset", rehearsalsNeeded: 1 });
+  });
+
+  it("grows into a calm teen with calm voice, clear limits and enough practice", () => {
+    const sessions = Array.from({ length: 6 }, (_, i) => calmSession(at(2026, 11, 1 + i)));
+    const g = childGrowth(sessions);
+    expect(g.stage).toBe("teen");
+    expect(g.mood).toBe("calm");
+    expect(g.toNext).toBe(1);
+  });
+
+  it("stays small and grumpy when threats and yelling keep coming", () => {
+    const harsh = Array.from({ length: 6 }, (_, i) => session(at(2026, 11, 1 + i), [turn("No iPad!", -15, "threat"), turn("STOP!", -20, "yell_or_insult"), good("name_feeling")]));
+    const g = childGrowth(harsh);
+    expect(["baby", "toddler"]).toContain(g.stage);
+    expect(["meltdown", "upset", "grumpy"]).toContain(g.mood);
+    expect(["control", "boundaries"]).toContain(g.focus);
+  });
+
+  it("needs practice too: one great rehearsal is not a teenager", () => {
+    expect(childGrowth([calmSession(at(2026, 11, 1))]).stage).not.toBe("teen");
   });
 });

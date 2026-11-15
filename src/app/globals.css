@@ -551,3 +551,33 @@ body {
   .age-cards > .age-card[aria-pressed="true"] { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(47, 91, 234, .25); }
   .tabs button[aria-selected="true"] { color: var(--color-primary); }
 }
+@layer components {
+  /* SOS: two big round buttons for how the parent feels, then Sebastian's answer in large type. */
+  .sos-states { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+  .sos-round {
+    display: grid; place-items: center; align-content: center; gap: 8px; width: 148px; height: 148px; padding: 14px;
+    border: 0; border-radius: 50%; cursor: pointer; color: #FFFFFF; text-align: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 16px; line-height: 1.15;
+    transition: transform .15s, box-shadow .15s;
+  }
+  .sos-round:hover { transform: scale(1.04); }
+  .sos-round:active { transform: scale(.97); }
+  .sos-round-panic { background: radial-gradient(circle at 30% 25%, #FF7BAC, #E02464 70%); box-shadow: 0 12px 28px rgba(224, 36, 100, .38), 0 0 0 8px rgba(255, 79, 147, .15); }
+  .sos-round-angry { background: radial-gradient(circle at 30% 25%, #FFA25C, #E2550F 70%); box-shadow: 0 12px 28px rgba(226, 85, 15, .36), 0 0 0 8px rgba(255, 138, 61, .16); }
+  .sos-round[aria-pressed="true"] { outline: 4px solid var(--color-ink); outline-offset: 4px; }
+  .sos-answer { display: flex; align-items: flex-start; gap: 12px; animation: rise .3s cubic-bezier(0.16, 1, 0.3, 1); }
+  .sos-answer-card { display: grid; gap: 12px; min-width: 0; flex: 1; padding: 18px 18px 16px; border-radius: 20px 20px 20px 6px; background: var(--color-surface); box-shadow: 0 6px 22px rgba(27, 33, 64, .10); }
+  .sos-answer-line { font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 5.6vw, 28px); line-height: 1.25; text-wrap: pretty; }
+  .sos-answer-ending { font-size: 16px; font-weight: 600; color: var(--color-primary); }
+  @media (max-width: 359px) { .sos-round { width: 132px; height: 132px; font-size: 15px; } }
+}
+@layer components {
+  .growth-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 20px; background: linear-gradient(160deg, #FFFFFF 0%, #F3F0FF 100%); }
+  @media (min-width: 640px) { .growth-card { grid-template-columns: auto minmax(0, 1fr); align-items: center; padding: 24px; } }
+  .growth-stage { justify-self: center; display: grid; place-items: center; width: 184px; height: 184px; border-radius: 50%; background: radial-gradient(circle, #FFFFFF 55%, #E9E3FF 100%); }
+  .growth-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .growth-steps li { height: 8px; border-radius: 999px; background: var(--color-line); }
+  .growth-steps li.done { background: linear-gradient(90deg, #22B07D, #3D8BFF); }
+  .growth-bar { display: block; height: 10px; border-radius: 999px; background: var(--color-line); overflow: hidden; }
+  .growth-bar > span { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #FF8A3D, #FF4F93, #7C3AED); }
+}
