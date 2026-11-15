@@ -3,7 +3,7 @@ import evalCasesJson from "../data/eval-cases.json";
 import fallbackLinesJson from "../data/fallback-lines.json";
 import scenariosJson from "../data/scenarios.json";
 import techniquesJson from "../data/techniques.json";
-import { ageGroupOf, CHILD_NAMES, FALLBACK_LINES, PRESETS, PRESET_PRIORITY, TECHNIQUES, TECHNIQUE_BY_TAG } from "./data";
+import { ageGroupOf, CHILD_NAMES, FALLBACK_LINES, PRESETS, PRESET_AGES, PRESET_PRIORITY, presetFitsAge, presetsForAge, TECHNIQUES, TECHNIQUE_BY_TAG } from "./data";
 import {
   EvalCasesFileSchema, FallbackLinesFileSchema, ScenariosFileSchema, TechniquesFileSchema,
 } from "./schemas";
@@ -70,15 +70,37 @@ describe("techniques", () => {
 });
 
 describe("scenarios", () => {
-  it("preserves the preset fields and keeps picker priority separate", () => {
+  it("preserves the preset fields and keeps age ranges and picker priority separate", () => {
     const { childNames, scenarios } = ScenariosFileSchema.parse(scenariosJson);
     expect(CHILD_NAMES).toEqual(childNames);
     expect(PRESETS).toHaveLength(scenarios.length);
-    for (const [index, { priority, ...scenario }] of scenarios.entries()) {
+    for (const [index, { priority, ages, ...scenario }] of scenarios.entries()) {
+      expect(PRESET_AGES[scenario.id]).toEqual(ages);
+      expect(presetFitsAge(scenario.id, scenario.ageYears)).toBe(true);
       expect(PRESET_PRIORITY[scenario.id]).toBe(priority);
       expect(PRESETS[index]).toEqual({ ...scenario, ageGroup: ageGroupOf(scenario.ageYears) });
     }
   });
+
+  it("offers at least three moments at every age, in priority and file order", () => {
+    for (let age = 2; age <= 12; age++) {
+      const matches = scenariosJson.scenarios.filter(({ ages }) => ages.min <= age && age <= ages.max);
+      const expected = ["P0", "P1"].flatMap((priority) => matches.filter((p) => p.priority === priority));
+      const ids = presetsForAge(age).map(({ id }) => id);
+      expect(ids.length).toBeGreaterThanOrEqual(3);
+      expect(ids).toEqual(expected.map(({ id }) => id));
+    }
+    expect(presetsForAge(12).map(({ id }) => id)).toEqual([
+      "screen-time-off", "homework-meltdown", "school-morning", "phone-bedtime",
+    ]);
+  });
+
+  it.each([{ min: 1, max: 5 }, { min: 5, max: 13 }, { min: 5, max: 4 }, { min: 2.5, max: 5 }])(
+    "rejects an invalid age range $min–$max", (ages) => {
+      const scenario = { ...scenariosJson.scenarios[0], ages };
+      expect(ScenariosFileSchema.safeParse({ ...scenariosJson, scenarios: [scenario] }).success).toBe(false);
+    },
+  );
 
   it("references only positive techniques in preset plans", () => {
     for (const { planPhrases } of ScenariosFileSchema.parse(scenariosJson).scenarios) {

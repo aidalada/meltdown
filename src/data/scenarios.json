@@ -23,6 +23,10 @@
       "setting": "Bathroom, 7:45 pm, already late for bed",
       "underlyingNeed": "autonomy",
       "openingLine": "NO! I don't want to brush my teeth!",
+      "ages": {
+        "min": 2,
+        "max": 6
+      },
       "planPhrases": [
         {
           "phrase": "You really don't want bedtime to start, huh?",
@@ -50,6 +54,10 @@
       "setting": "Park, 5:30 pm, time to go home for dinner",
       "underlyingNeed": "transition",
       "openingLine": "No! I'm not going! I want to SLIDE!",
+      "ages": {
+        "min": 2,
+        "max": 7
+      },
       "planPhrases": [
         {
           "phrase": "You love the slide so much. It's hard to stop.",
@@ -77,6 +85,10 @@
       "setting": "Bedroom, 7:50 am, you need to leave in 10 minutes",
       "underlyingNeed": "autonomy",
       "openingLine": "I'm NOT wearing that! It's itchy!",
+      "ages": {
+        "min": 2,
+        "max": 5
+      },
       "planPhrases": [
         {
           "phrase": "That shirt feels itchy and you hate that feeling.",
@@ -104,6 +116,10 @@
       "setting": "Living room, 6 pm, dinner is ready",
       "underlyingNeed": "transition",
       "openingLine": "Just one more level! You promised!",
+      "ages": {
+        "min": 4,
+        "max": 12
+      },
       "planPhrases": [
         {
           "phrase": "It's so hard to stop right in the middle of a level.",
@@ -131,6 +147,10 @@
       "setting": "Playroom, Saturday morning",
       "underlyingNeed": "fairness",
       "openingLine": "She TOOK it! It's MINE! It's not fair!",
+      "ages": {
+        "min": 3,
+        "max": 9
+      },
       "planPhrases": [
         {
           "phrase": "You're so upset. That toy really matters to you.",
@@ -158,6 +178,10 @@
       "setting": "Kitchen table, 7 pm, worksheet due tomorrow",
       "underlyingNeed": "competence",
       "openingLine": "I can't do this! It's too hard! I'm not doing it!",
+      "ages": {
+        "min": 6,
+        "max": 12
+      },
       "planPhrases": [
         {
           "phrase": "Math feels really frustrating right now.",
@@ -170,6 +194,68 @@
         {
           "phrase": "Want to start with the easiest one or the shortest one?",
           "technique": "offer_choice"
+        }
+      ]
+    },
+    {
+      "id": "school-morning",
+      "source": "preset",
+      "priority": "P1",
+      "title": "Getting ready for school",
+      "childName": "Noah",
+      "ageYears": 8,
+      "temperament": "sensitive",
+      "trigger": "won't get out of bed and get dressed",
+      "setting": "Bedroom, 7:35 am, the school bus comes in 15 minutes",
+      "underlyingNeed": "transition",
+      "openingLine": "I'm not going! I hate mornings! Just five more minutes!",
+      "ages": {
+        "min": 6,
+        "max": 12
+      },
+      "planPhrases": [
+        {
+          "phrase": "You really don't want to leave your warm bed, huh?",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "Do you want to wear the hoodie or the jacket?",
+          "technique": "offer_choice"
+        },
+        {
+          "phrase": "When you're dressed, then you pick the music in the car.",
+          "technique": "when_then"
+        }
+      ]
+    },
+    {
+      "id": "phone-bedtime",
+      "source": "preset",
+      "priority": "P1",
+      "title": "Phone away at bedtime",
+      "childName": "Zoe",
+      "ageYears": 12,
+      "temperament": "strong-willed",
+      "trigger": "won't hand over the phone at bedtime",
+      "setting": "Bedroom, 10 pm, school tomorrow",
+      "underlyingNeed": "autonomy",
+      "openingLine": "Seriously? Everyone else is still online. You're ruining my life.",
+      "ages": {
+        "min": 9,
+        "max": 12
+      },
+      "planPhrases": [
+        {
+          "phrase": "It feels so unfair to log off while your friends are still online.",
+          "technique": "name_feeling"
+        },
+        {
+          "phrase": "Do you want to plug it in yourself, or should I?",
+          "technique": "offer_choice"
+        },
+        {
+          "phrase": "When the phone is charging in the kitchen, then we can talk about weekend hours.",
+          "technique": "when_then"
         }
       ]
     }

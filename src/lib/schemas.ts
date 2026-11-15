@@ -278,6 +278,7 @@ export type TechniquesFile = z.infer<typeof TechniquesFileSchema>;
 const presetSchema = ScenarioSchema.omit({ ageGroup: true }).extend({
   source: z.literal("preset"),
   priority: z.enum(["P0", "P1"]),
+  ages: z.object({ min: ageYears, max: ageYears }).refine(({ min, max }) => min <= max),
   planPhrases: z.array(PlanPhraseSchema),
 });
 export type Preset = z.infer<typeof presetSchema>;
