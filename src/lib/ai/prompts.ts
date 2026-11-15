@@ -103,7 +103,7 @@ FIELDS
   - calm_limit: hold the limit calmly, without a threat.
   - labeled_praise: praise exactly what the child did right.
   Prefer the technique that replaces what went wrong: a threat → offer_choice or when_then; yelling or insults → connect_first or calm_limit; a lecture → name_feeling or when_then; dismissing the feeling or asking "why" → name_feeling; a bribe → when_then. Do not pick a technique the parent clearly already used in this message.
-- say: one phrase in English (the practice child speaks English), at most 18 words, that the parent could say to this child in this exact situation, using that technique and fitting the child's age. No quotation marks, no emoji. Use "" if the message is not about a moment with their child.
+- say: one phrase, always in English, even when <reply_language> is Russian, at most 18 words, that the parent could say to this child in this exact situation, using that technique and fitting the child's age. No quotation marks, no emoji. Use "" if the message is not about a moment with their child.
 - preset: the practice scenario closest to the moment, or "none" if none fits: ${coachPresets}.
   Pick a preset only if the child's age from <memory> is inside its age range; if the age is unknown, judge by the message; if nothing fits, use "none". The say phrase must fit the child's age: no babyish games for ages 9–12.
 

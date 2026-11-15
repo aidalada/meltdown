@@ -1,10 +1,11 @@
-import { ageGroupOf, FALLBACK_LINES, PRESETS, presetFitsAge, TECHNIQUES, TECHNIQUE_BY_TAG } from "../data";
+import { ageGroupOf, FALLBACK_LINES, TECHNIQUES, TECHNIQUE_BY_TAG } from "../data";
 import { detectSafety } from "../safety";
 import type { DebriefModelOutput, ScenarioModelOutput } from "../schemas";
 import type { DebriefRequest, PositiveTag, ScenarioRequest, TagHit, TurnModelOutput, TurnRequest } from "../types";
 import { examplePhrase, fallbackPlan, turnsToRewrite } from "./debrief";
 import { BANDS, bandIndex, bandOf } from "./mood";
 import { normalizeText, pickFallbackLine, replySeed } from "./text";
+import { matchPreset } from "./scenario";
 import { postProcessTags } from "./turn";
 
 const patterns = TECHNIQUES.map(({ tag, patterns }) => ({
@@ -41,25 +42,12 @@ export function heuristicTurnOutput(req: TurnRequest): TurnModelOutput {
   };
 }
 
-const scenarioKeywords: [RegExp, string[]][] = [
-  [/\b(teeth|brush)/i, ["teeth-bedtime"]],
-  [/\b(park|playground|slide|leave)/i, ["leaving-playground"]],
-  [/\b(homework|math|reading|worksheet)/i, ["homework-meltdown"]],
-  [/\b(phone|online|tiktok|instagram|snapchat|texting)/i, ["phone-bedtime", "screen-time-off"]],
-  [/\b(school|bus|alarm|wake up|out of bed)/i, ["school-morning"]],
-  [/\b(dress|clothes|shoes|daycare|preschool)/i, ["getting-dressed", "school-morning"]],
-  [/\b(tablet|ipad|screen|tv|game)/i, ["screen-time-off"]],
-  [/\b(sibling|brother|sister|share|toy)/i, ["sibling-fight"]],
-];
-
 // Reject clear requests for unrelated content before they can match a preset keyword.
 const unrelatedRequest = /^(?:please[\s,]+)?(?:(?:can|could|would) you\s+)?(?:write|compose|generate|recite|tell)\s+(?:(?:me|us)\s+)?(?:(?:a|an|the|some)\s+)?(?:poems?|stor(?:y|ies)|jokes?|songs?|essays?)\b/i;
 
 export function heuristicScenarioOutput(req: ScenarioRequest): ScenarioModelOutput {
   const text = normalizeText(req.text);
-  const id = scenarioKeywords.flatMap(([pattern, candidates]) => pattern.test(text) ? candidates : [])
-    .find((candidate) => presetFitsAge(candidate, req.ageYears));
-  const preset = PRESETS.find((scenario) => scenario.id === id);
+  const preset = matchPreset(req.text, req.ageYears);
   return {
     on_topic: !unrelatedRequest.test(text),
     safety: detectSafety(text),
@@ -90,13 +78,13 @@ export function heuristicDebriefOutput(req: DebriefRequest): DebriefModelOutput 
     const next = suggestedTags.find((tag) => !totals.has(tag)) ?? "name_feeling";
     summary = "You stayed with it for " + count + " turns. Next time, try this: " + TECHNIQUE_BY_TAG[next].shortTip;
   }
-  // A phrase from this scenario's plan fits the moment better than the generic example (about toothbrushes).
-  const plan = req.scenario.planPhrases ?? [];
+  const plan = fallbackPlan(req.scenario);
   const rewrites = turnsToRewrite(req.turns).map((turn) => {
     const negative = turn.tags.map(({ tag }) => TECHNIQUE_BY_TAG[tag]).find((item) => item.polarity === "negative");
     const better: PositiveTag[] = negative?.betterWith.length ? negative.betterWith : ["name_feeling"];
-    const { phrase, technique } = plan.find((p) => better.includes(p.technique)) ?? examplePhrase(better[0]);
+    const preferred = better.find((tag) => plan.some((p) => p.technique === tag));
+    const { phrase, technique } = plan.find((p) => p.technique === preferred) ?? examplePhrase(better[0]);
     return { turn_index: turn.index, improved: phrase, technique };
   });
-  return { summary, rewrites, tonight_plan: fallbackPlan(req.scenario) };
+  return { summary, rewrites, tonight_plan: plan };
 }
