@@ -185,6 +185,12 @@ export const copy = {
     rehearsedTitle: "You rehearsed",
     back: "Back",
     sound: "Sound of waves",
+    soundSub: "Breathe with the waves for a minute",
+    soundStop: "Stop the waves",
+    calmLines: [
+      "I'm right here. Breathe out slowly, longer than you breathe in.",
+      "You're stressed, and that's okay. Pick one line below and say it quietly.",
+    ],
   },
   coach: {
     name: "Sebastian",
@@ -261,6 +267,8 @@ export const copy = {
     safetyLine: "I'm really glad you told me this. It's bigger than a practice session, so please reach out to someone right now.",
     source: "Source",
     rehearse: "Rehearse this · 3 min",
+    rehearseTitle: "Rehearse this moment",
+    rehearseSub: "3 minutes with a practice child · voice or text",
     rehearsing: "Setting it up…",
     offTopic: "I couldn't turn that into a practice moment. Try describing what your child did and what you said.",
     memoryTitle: "What Sebastian remembers",

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ChildBadge } from "@/components/ChildBadge";
+import { WavesArt } from "@/components/ScenarioArt";
 import { Icon } from "@/components/Icon";
 import { SebastianAvatar } from "@/components/SebastianAvatar";
 import { PageSkeleton } from "@/components/Skeleton";
@@ -12,7 +13,7 @@ import { sosPhrases } from "@/content/sos-phrases";
 import { useBreathSound } from "@/hooks/useBreathSound";
 import { useHydrated } from "@/hooks/useHydrated";
 import { choiceOf, rangeOf } from "@/lib/age";
-import { DEFAULT_PROFILE, loadPlan, loadProfile } from "@/lib/storage";
+import { DEFAULT_PROFILE, loadChildFacts, loadPlan, loadProfile } from "@/lib/storage";
 
 export default function SosPage() {
   const hydrated = useHydrated();
@@ -29,6 +30,7 @@ function Sos() {
   const router = useRouter();
   const [profile] = useState(() => loadProfile() ?? DEFAULT_PROFILE);
   const [rehearsed] = useState(() => loadPlan()?.phrases ?? []);
+  const [facts] = useState(loadChildFacts);
   const sound = useBreathSound();
   const phrases = sosPhrases(profile.ageYears, profile.temperament);
   const age = copy.setup.ageRange(rangeOf(choiceOf(profile.ageYears)));
@@ -42,13 +44,30 @@ function Sos() {
     <div className="wrap wrap-narrow grid grid-cols-[minmax(0,1fr)] gap-6 py-6">
       <header className="grid gap-2">
         <p className="flex flex-wrap items-center gap-2 text-sm font-semibold text-muted">
-          <ChildBadge years={profile.ageYears} size={32} />
-          {copy.sos.forChild(profile.childName, age, copy.setup.temperaments[profile.temperament])}
+          <ChildBadge years={profile.ageYears} size={32} girl={facts.gender === "girl"} />
+          {copy.sos.forChild(facts.named ? profile.childName : copy.coach.yourChildTitle, age, copy.setup.temperaments[profile.temperament])}
           <Link href="/practice" className="font-semibold">{copy.sos.change}</Link>
         </p>
         <h1 className="text-[clamp(30px,7vw,48px)]">{copy.sos.sayNow}</h1>
-        <p className="text-lg text-muted">{copy.sos.lead}</p>
       </header>
+
+      <div className="sos-coach">
+        <SebastianAvatar size={48} decorative />
+        <div className="bubble bubble-coach">
+          {copy.sos.calmLines.map((line) => <p key={line}>{line}</p>)}
+        </div>
+      </div>
+
+      <button type="button" className="waves-btn" aria-pressed={sound.on} onClick={sound.toggle}>
+        <WavesArt playing={sound.on} className="waves-art" />
+        <span className="waves-body">
+          <span className="waves-icon" aria-hidden="true"><Icon name={sound.on ? "soundOff" : "sound"} size={26} /></span>
+          <span className="grid min-w-0 gap-0.5 text-left">
+            <strong>{sound.on ? copy.sos.soundStop : copy.sos.sound}</strong>
+            <small>{copy.sos.soundSub}</small>
+          </span>
+        </span>
+      </button>
 
       <ol className="sos-list">
         {phrases.map((p, i) => (
@@ -78,10 +97,6 @@ function Sos() {
 
       <div className="flex flex-wrap items-center gap-2.5">
         <button type="button" className="btn btn-secondary btn-lg" onClick={back}>{copy.sos.back}</button>
-        <button type="button" className="chip-btn inline-flex items-center gap-2" aria-pressed={sound.on} onClick={sound.toggle}>
-          <Icon name={sound.on ? "sound" : "soundOff"} size={18} />
-          {copy.sos.sound}
-        </button>
         <Link className="btn btn-ghost btn-lg btn-wrap pl-2" href="/">
           <SebastianAvatar size={32} decorative />
           {copy.coach.sosLink}
