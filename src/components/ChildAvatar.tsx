@@ -50,6 +50,8 @@ export interface ChildAvatarProps {
   decorative?: boolean;
   /** A daughter: pigtails for the little ones, longer hair later, and a bow. */
   girl?: boolean;
+  /** The growing child on Progress: a baby (one curl, a bib) or a teen (no headphones, a hoodie). */
+  look?: "baby" | "teen";
 }
 
 const BOW = "#FF5C9A";
@@ -88,7 +90,7 @@ function Bow() {
 }
 
 /** 2D practice child (SPEC 13.3). Pure SVG, safe to render on the server. */
-export function ChildAvatar({ band, speaking, thinking, name, age = "preschool", size = 220, showName = true, pop = false, decorative = false, girl = false }: ChildAvatarProps) {
+export function ChildAvatar({ band, speaking, thinking, name, age = "preschool", size = 220, showName = true, pop = false, decorative = false, girl = false, look }: ChildAvatarProps) {
   const copy = useCopy();
   const dx = thinking ? 3 : 0;
   const dy = thinking ? -4 : 0;
@@ -104,15 +106,29 @@ export function ChildAvatar({ band, speaking, thinking, name, age = "preschool",
             <circle cx="38" cy="110" r="10" fill="#FFD7B0" />
             <circle cx="162" cy="110" r="10" fill="#FFD7B0" />
             <circle cx="100" cy="108" r="62" fill="#FFD7B0" stroke="#E8B98E" strokeWidth="2" />
-            <path d={HAIR[age]} fill={HAIR_COLOR} />
+            {look === "baby"
+              ? <path d="M100 47 Q90 30 101 25 Q112 22 110 32 Q108 38 101 36" stroke={HAIR_COLOR} strokeWidth="5" fill="none" strokeLinecap="round" />
+              : <path d={HAIR[age]} fill={HAIR_COLOR} />}
             {girl && <Bow />}
+            {look === "baby" && (
+              <>
+                <path d="M70 162 Q100 190 130 162 Q122 182 100 186 Q78 182 70 162 Z" fill="#FFFFFF" stroke="#BFD9FF" strokeWidth="3" />
+                <circle cx="100" cy="176" r="3" fill="#FF9AA2" />
+              </>
+            )}
+            {look === "teen" && (
+              <>
+                <path d="M52 182 Q100 204 148 182 L156 200 L44 200 Z" fill="#7C5CFF" />
+                <path d="M88 186 v10 M112 186 v10" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" />
+              </>
+            )}
             {age === "school" && (
               <>
                 <path d="M94 33 Q98 15 112 19 Q105 24 108 33 Z" fill={HAIR_COLOR} />
                 {FRECKLES.map(([cx, cy]) => <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="1.8" fill="#D9965F" />)}
               </>
             )}
-            {age === "preteen" && (
+            {age === "preteen" && look !== "teen" && (
               <>
                 <path d="M29 104 Q29 11 100 11 Q171 11 171 104" stroke="#3A4A7A" strokeWidth="8" fill="none" strokeLinecap="round" />
                 <rect x="19" y="92" width="19" height="36" rx="8" fill="#3A4A7A" />

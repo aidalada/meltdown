@@ -1,5 +1,5 @@
 import { TECHNIQUE_BY_TAG } from "./data";
-import type { Session, TechniqueTag } from "./types";
+import type { MoodBand, Session, TechniqueTag } from "./types";
 
 /** "YYYY-MM-DD" in the device's local time zone. */
 export function localDate(d: Date): string {
@@ -67,4 +67,54 @@ export function skillScores(sessions: Pick<Session, "turns">[]): Record<Skill, n
     return Math.round((100 * good) / (good + 2 * harmful + 2));
   };
   return { empathy: score("empathy"), boundaries: score("boundaries"), control: score("control"), choices: score("choices") };
+}
+
+/*
+ * The growing child on the Progress screen. A baby at the start; it grows into a calm, kind teen as
+ * the parent's skills grow. Calm voice (emotional control) and clear limits (boundaries) count double,
+ * and every stage also needs real practice, so one lucky rehearsal does not make a teenager.
+ */
+export type GrowthStage = "baby" | "toddler" | "preschool" | "school" | "teen";
+export const GROWTH_STAGES: readonly GrowthStage[] = ["baby", "toddler", "preschool", "school", "teen"];
+const STAGE_LEVEL = [0, 25, 45, 60, 75];
+const STAGE_REHEARSALS = [0, 1, 2, 3, 5];
+
+export interface Growth {
+  stage: GrowthStage;
+  /** 0 to 100: skills, with control and boundaries counting double. */
+  level: number;
+  /** The child's face: from crying to calm, following the level. */
+  mood: MoodBand;
+  /** 0 to 1 towards the next stage; 1 at the last stage. */
+  toNext: number;
+  /** Rehearsals still needed for the next stage (0 when skills are what holds it back). */
+  rehearsalsNeeded: number;
+  /** The weakest skill: what to work on to grow faster. */
+  focus: Skill;
+}
+
+export function childGrowth(sessions: Pick<Session, "turns">[]): Growth {
+  const practiced = sessions.filter((s) => s.turns.length > 0);
+  const scores = skillScores(practiced);
+  const level = Math.round((2 * scores.control + 2 * scores.boundaries + scores.empathy + scores.choices) / 6);
+  let index = 0;
+  for (let i = 1; i < GROWTH_STAGES.length; i++) {
+    if (level >= STAGE_LEVEL[i] && practiced.length >= STAGE_REHEARSALS[i]) index = i;
+  }
+  const last = index === GROWTH_STAGES.length - 1;
+  const toNext = last ? 1 : Math.max(0, Math.min(1, Math.min(
+    (level - STAGE_LEVEL[index]) / (STAGE_LEVEL[index + 1] - STAGE_LEVEL[index]),
+    practiced.length / STAGE_REHEARSALS[index + 1],
+  )));
+  const mood: MoodBand = practiced.length === 0 ? "upset"
+    : level >= 70 ? "calm" : level >= 50 ? "warming" : level >= 32 ? "grumpy" : level >= 18 ? "upset" : "meltdown";
+  const focus = [...SKILLS].sort((a, b) => scores[a] - scores[b])[0];
+  return {
+    stage: GROWTH_STAGES[index],
+    level,
+    mood,
+    toNext,
+    rehearsalsNeeded: last ? 0 : Math.max(0, STAGE_REHEARSALS[index + 1] - practiced.length),
+    focus,
+  };
 }
