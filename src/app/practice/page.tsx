@@ -101,7 +101,7 @@ function PracticeSetup() {
         <MomentForm busy={busy} error={error} onSubmit={submitMoment} />
       </div>
       <div id="panel-common" role="tabpanel" aria-labelledby="tab-common" hidden={tab !== "common"}>
-        <ScenarioPicker onPick={begin} resolve={resolvePreset} />
+        <ScenarioPicker ageYears={profile.ageYears} onPick={begin} resolve={resolvePreset} />
       </div>
       {safety && <SafetyNotice kind={safety} onContinue={() => setSafety(null)} />}
     </div>

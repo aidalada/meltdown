@@ -25,7 +25,19 @@ export const TECHNIQUE_BY_TAG: Record<TechniqueTag, Technique> = z.record(Techni
 export const CHILD_NAMES = childNames;
 export const PRESETS: Scenario[] = [];
 export const PRESET_PRIORITY: Record<string, Preset["priority"]> = {};
-for (const { priority, ...scenario } of scenarios) {
+export const PRESET_AGES: Record<string, Preset["ages"]> = {};
+for (const { priority, ages, ...scenario } of scenarios) {
+  PRESET_AGES[scenario.id] = ages;
   PRESET_PRIORITY[scenario.id] = priority;
   PRESETS.push({ ...scenario, ageGroup: ageGroupOf(scenario.ageYears) });
+}
+
+export function presetFitsAge(id: string, years: number): boolean {
+  const range = PRESET_AGES[id];
+  return !!range && years >= range.min && years <= range.max;
+}
+
+export function presetsForAge(years: number): Scenario[] {
+  return PRESETS.filter(({ id }) => presetFitsAge(id, years))
+    .sort((a, b) => PRESET_PRIORITY[a.id].localeCompare(PRESET_PRIORITY[b.id]));
 }

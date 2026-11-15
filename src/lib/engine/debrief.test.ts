@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { PRESETS, TECHNIQUE_BY_TAG } from "../data";
+import { ageGroupOf, PRESETS, TECHNIQUE_BY_TAG } from "../data";
 import { DebriefModelOutputSchema, DebriefSchema } from "../schemas";
 import type { DebriefRequest, TechniqueTag, Turn } from "../types";
 import { fallbackPlan, finalizeDebrief, turnsToRewrite } from "./debrief";
@@ -48,6 +48,39 @@ it("rewrites with the scenario's own plan phrase when one fits, else the techniq
   expect(out.summary).toBe("You stayed with it for 5 turns. Next time, try this: " + TECHNIQUE_BY_TAG.offer_choice.shortTip);
 });
 
+it.each([
+  [12, "Phone at bedtime", "Won't stop", "Bedroom", "phone-bedtime"],
+  [12, "A hard evening", "Won't start math", "Kitchen", "homework-meltdown"],
+  [12, "A hard morning", "Won't get going", "The school bus is coming", "school-morning"],
+  [12, "Brushing teeth", "Refuses", "Bathroom", "screen-time-off"],
+  [4, "Before we go", "Won't put shoes on", "Hallway", "getting-dressed"],
+  [4, "A hard moment", "Refuses", "At home", "teeth-bedtime"],
+] as const)("selects an age-appropriate plan and rewrite: age %i, %s / %s / %s → %s", (ageYears, title, trigger, setting, id) => {
+  const scenario = { ...req.scenario, id: "custom-test", source: "custom" as const,
+    ageYears, ageGroup: ageGroupOf(ageYears), title, trigger, setting, planPhrases: undefined };
+  const request = { ...req, scenario, turns: [turn(0, 50, 35, ["threat", "lecture"])] };
+  const plan = PRESETS.find((p) => p.id === id)!.planPhrases!;
+  const out = heuristicDebriefOutput(request);
+  const result = finalizeDebrief(request, out, "fallback");
+  expect(result.tonightPlan).toEqual(plan);
+  expect(result.rewrites).toHaveLength(1);
+  expect(result.rewrites[0]).toMatchObject({
+    technique: "offer_choice", improved: plan.find((p) => p.technique === "offer_choice")!.phrase,
+  });
+  if (ageYears === 12) {
+    const lines = [...result.tonightPlan.map((p) => p.phrase), ...result.rewrites.map((r) => r.improved)];
+    expect(lines.join(" ")).not.toMatch(/toothbrush|teeth|story/i);
+  }
+});
+
+it("uses the first matching betterWith technique even when it comes last in the plan", () => {
+  const scenario = { ...req.scenario, planPhrases: [...req.scenario.planPhrases!].reverse() };
+  const request = { ...req, scenario, turns: [turn(0, 50, 35, ["threat"])] };
+  const result = heuristicDebriefOutput(request);
+  expect(result.tonight_plan).toEqual(scenario.planPhrases);
+  expect(result.rewrites[0].technique).toBe("offer_choice");
+});
+
 it("uses total applied points for calm and the default label after all four suggestions", () => {
   const turns = [turn(0, 50, 62, ["name_feeling"]), turn(1, 62, 70, ["offer_choice"]),
     turn(2, 70, 84, ["offer_choice", "when_then", "connect_first"])];
@@ -65,8 +98,6 @@ it("completes missing or repetitive plans with three different techniques", () =
     expect(tonightPlan).toHaveLength(3);
     expect(new Set(tonightPlan.map((p) => p.technique)).size).toBe(3);
   }
-  const custom = { ...req.scenario, planPhrases: undefined };
-  expect(fallbackPlan(custom).map((p) => p.technique)).toEqual(["name_feeling", "offer_choice", "when_then"]);
 });
 
 it("includes the starting mood for a session with no turns", () => {

@@ -1,11 +1,10 @@
 import { textsFor, type Texts } from "@/content/locale";
 import type { ChildGender, CoachMemory, CoachMessage, CoachReply } from "@/types/coach";
 import { MAX_SCENARIO_TEXT } from "./constants";
-import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
+import { CHILD_NAMES, PRESETS, presetFitsAge, TECHNIQUE_BY_TAG } from "./data";
 import { heuristicTags } from "./engine/heuristics";
 import { localDate } from "./progress";
 import { detectSafety } from "./safety";
-import { CHILD_NAMES } from "./data";
 import type { Checkin, ChildFacts, SavedPlan } from "./storage";
 import type { NegativeTag, PositiveTag, Profile, Session, TechniqueTag } from "./types";
 
@@ -28,13 +27,16 @@ const isNegative = (tag: TechniqueTag): tag is NegativeTag => NEGATIVE.includes(
  * example that fits the moment (techniques.json has one example per technique, about toothbrushes).
  * Order matters: in "no iPad if you don't brush", the iPad is the threat, the moment is teeth.
  */
-const TOPICS: { en: RegExp; ru: RegExp; technique: PositiveTag; preset: string }[] = [
-  { en: /\b(teeth|tooth|brush\w*|bedtime|pajamas?|bath)\b/i, ru: /(зуб|чистк|чистить|укладыв|спать|пижам|купа|ванн)/i, technique: "when_then", preset: "teeth-bedtime" },
-  { en: /\b(park|playground|slide|swings?|leav(e|ing)|go home|car seat)\b/i, ru: /(площадк|парк|горк|качел|уход|уйти|домой)/i, technique: "offer_choice", preset: "leaving-playground" },
-  { en: /\b(ipad|tablet|screens?|tv|phone|games?|youtube)\b/i, ru: /(планшет|айпад|мульт|телефон|телевизор|компьютер|игр[аеуы](?![а-яё]))/i, technique: "when_then", preset: "screen-time-off" },
-  { en: /\b(dress(ed|ing)?|clothes|shirt|shoes|socks|daycare|preschool)\b/i, ru: /(одева|одеть|одежд|куртк|ботинк|обув|носк|садик|детский сад)/i, technique: "playful", preset: "getting-dressed" },
-  { en: /\b(toys?|share|sharing|sister|brother|siblings?|grab\w*)\b/i, ru: /(игрушк|сестр|брат|делит|отобрал|отнял)/i, technique: "calm_limit", preset: "sibling-fight" },
-  { en: /\b(homework|math|reading|spelling)\b/i, ru: /(урок|домашк|домашн|математ|пропис)/i, technique: "connect_first", preset: "homework-meltdown" },
+const TOPICS: { en: RegExp; ru: RegExp; choices: [string, PositiveTag][] }[] = [
+  { en: /\b(teeth|tooth|brush\w*)\b/i, ru: /(зуб|чистк|чистить)/i, choices: [["teeth-bedtime", "when_then"]] },
+  { en: /\b(phone|online|tiktok|instagram|snapchat|texting)\b/i, ru: /(телефон|онлайн|тикток|инстаграм|переписк)/i, choices: [["phone-bedtime", "offer_choice"], ["screen-time-off", "when_then"]] },
+  { en: /\b(bedtime|pajamas?|bath)\b/i, ru: /(укладыв|спать|пижам|купа|ванн)/i, choices: [["teeth-bedtime", "when_then"]] },
+  { en: /\b(park|playground|slide|swings?|leav(e|ing)|go home|car seat)\b/i, ru: /(площадк|парк|горк|качел|уход|уйти|домой)/i, choices: [["leaving-playground", "offer_choice"]] },
+  { en: /\b(ipad|tablet|screens?|tv|games?|youtube)\b/i, ru: /(планшет|айпад|мульт|телевизор|компьютер|игр[аеуы](?![а-яё]))/i, choices: [["screen-time-off", "when_then"]] },
+  { en: /\b(dress(ed|ing)?|clothes|shirt|shoes|socks|daycare|preschool)\b/i, ru: /(одева|одеть|одежд|куртк|ботинк|обув|носк|садик|детский сад)/i, choices: [["getting-dressed", "playful"], ["school-morning", "offer_choice"]] },
+  { en: /\b(toys?|share|sharing|sister|brother|siblings?|grab\w*)\b/i, ru: /(игрушк|сестр|брат|делит|отобрал|отнял)/i, choices: [["sibling-fight", "calm_limit"]] },
+  { en: /\b(homework|math|reading|spelling)\b/i, ru: /(урок|домашк|домашн|математ|пропис)/i, choices: [["homework-meltdown", "connect_first"]] },
+  { en: /\b(school|bus|alarm|wake up|out of bed)\b/i, ru: /(школ|автобус|будильник|вставать)/i, choices: [["school-morning", "offer_choice"]] },
 ];
 
 /**
@@ -175,10 +177,15 @@ export function coachReply(text: string, memory: CoachMemory, now: Date, t: Text
     .filter((h) => h.tag !== "name_feeling" || /\byou(r|'re)?\b/i.test(h.evidence))
     .map((h) => h.tag)
     .filter((tag): tag is PositiveTag => !isNegative(tag));
-  const topic = TOPICS.find((x) => x.en.test(said) || x.ru.test(said));
-  const technique = suggest(negative, used, topic?.technique ?? "name_feeling");
-  const fitting = PRESETS.find((p) => p.id === topic?.preset)?.planPhrases?.find((p) => p.technique === technique)?.phrase;
-  const say = fitting ?? (topic ? undefined : TECHNIQUE_BY_TAG[technique].goodExample ?? undefined);
+  const age = extractChild(said).ageYears ?? memory.child?.ageYears;
+  const choices = TOPICS.flatMap((topic) => topic.en.test(said) || topic.ru.test(said) ? topic.choices : []);
+  const choice = choices.find(([id]) => age === undefined || presetFitsAge(id, age));
+  const [preset, suggestion] = choice ?? [];
+  const technique = suggest(negative, used, suggestion ?? "name_feeling");
+  const fitting = PRESETS.find((p) => p.id === preset)?.planPhrases?.find((p) => p.technique === technique)?.phrase;
+  // The generic examples are about brushing a young child's teeth.
+  const genericFits = choices.length === 0 && (age === undefined || presetFitsAge("teeth-bedtime", age));
+  const say = fitting ?? (genericFits ? TECHNIQUE_BY_TAG[technique].goodExample : undefined);
 
   // One short line up front. The tip, the why and the source sit behind "Why it works" on screen.
   const lead = negative
@@ -190,7 +197,7 @@ export function coachReply(text: string, memory: CoachMemory, now: Date, t: Text
       role: "coach", at, lines: [lead], technique, rehearse: said.slice(0, MAX_SCENARIO_TEXT),
       ...(say ? { say } : {}),
       ...(negative && memory.struggle === negative ? { again: true } : {}),
-      ...(topic ? { preset: topic.preset } : {}),
+      ...(preset ? { preset } : {}),
     },
   };
 }

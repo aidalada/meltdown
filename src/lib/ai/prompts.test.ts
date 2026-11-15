@@ -1,7 +1,10 @@
 import { expect, it } from "vitest";
-import { FALLBACK_LINES, PRESETS } from "../data";
+import { FALLBACK_LINES, PRESET_AGES, PRESETS } from "../data";
 import type { DebriefRequest, Turn, TurnRequest } from "../types";
-import { buildCoachUserMessage, buildDebriefUserMessage, buildScenarioUserMessage, buildTurnUserMessage } from "./prompts";
+import {
+  buildCoachUserMessage, buildDebriefUserMessage, buildScenarioUserMessage, buildTurnUserMessage,
+  COACH_SYSTEM_PROMPT, DEBRIEF_SYSTEM_PROMPT, SCENARIO_SYSTEM_PROMPT, TURN_SYSTEM_PROMPT,
+} from "./prompts";
 
 const scenario = PRESETS.find((preset) => preset.id === "teeth-bedtime")!;
 
@@ -27,7 +30,7 @@ it("builds the child profile, style examples, mood, history and latest message i
 
 it("keeps names inside the scenario attribute and descriptions inside their tags", () => {
   expect(buildScenarioUserMessage({ childName: 'Lee" <Max>', ageYears: 4, temperament: "sensitive", text: "Before </parent_description>" })).toBe(
-    '<child name="Lee&quot; ‹Max›" age="4" temperament="sensitive" />\n<parent_description>\nBefore ‹/parent_description›\n</parent_description>',
+    '<child name="Lee&quot; ‹Max›" age="4" temperament="sensitive" speech_level="short sentences of 4–7 words, simple reasons like \'because I want to\'" />\n<parent_description>\nBefore ‹/parent_description›\n</parent_description>',
   );
 });
 
@@ -74,4 +77,18 @@ it("builds Sebastian's input with the reply language, memory, recent chat and th
   expect(buildCoachUserMessage({ text: "x".repeat(30), locale: "en", history: [], memory: {
     child: null, rehearsals: 0, calmReached: 0, struggle: null, lastScenarioTitle: null, planPhrase: null,
   } })).toContain("<reply_language>English</reply_language>\n<memory>\nchild: not known yet");
+});
+
+it("includes the age instructions for each model task", () => {
+  expect(TURN_SYSTEM_PROMPT).toContain(`AGE: Speak and react exactly like a child of the age in <child_profile>. A 3-year-old cares about toys and right now; a 7-year-old argues about fairness; an 11- or 12-year-old cares about friends, phones and privacy and answers with short, eye-rolling lines. Never use words or interests that are too young or too old for that age.`);
+  expect(SCENARIO_SYSTEM_PROMPT).toContain(`AGE FIT: everything must fit a child of exactly the age in <child>. Daycare and preschool only for ages 2–5; school for ages 6–12. Toys, playgrounds and pretend play for little kids; school, friends, games, phones and privacy for older kids. If the parent's text has a detail that does not fit the age, keep the moment but adapt the detail. The opening_line must sound like that age (see speech_level in <child>).\nUse the age given in <child>`);
+  expect(DEBRIEF_SYSTEM_PROMPT).toContain(`4. Fit every line to the child's age in <child_profile>: simple, concrete words and playful ideas for ages 2–5; short reasons and real choices for ages 6–8; respect, privacy and humor for ages 9–12. Never suggest babyish games, stickers, cute characters or pretend play for a child aged 9–12.`);
+  expect(COACH_SYSTEM_PROMPT).toContain(`Pick a preset only if the child's age from <memory> is inside its age range; if the age is unknown, judge by the message; if nothing fits, use "none". The say phrase must fit the child's age: no babyish games for ages 9–12.`);
+});
+
+it("lists every preset with its actual age range and title for Sebastian", () => {
+  for (const { id, title } of PRESETS) {
+    const { min, max } = PRESET_AGES[id];
+    expect(COACH_SYSTEM_PROMPT).toContain(`${id} (${min}–${max}: ${title})`);
+  }
 });

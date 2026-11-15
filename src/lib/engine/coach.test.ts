@@ -60,6 +60,22 @@ describe("finalizeCoach", () => {
     expect(finalizeCoach(req, { ...MODEL, preset: "made-up" }, local).preset).toBe(local.preset);
   });
 
+  it("replaces an age-inappropriate suggestion with an eligible local preset or omits it", () => {
+    const older = request("Каждое утро отказывается одеваться и надевать ботинки.", "ru");
+    older.memory.child!.ageYears = 12;
+    const local = localCoachReply(older, NOW);
+    expect(local.preset).toBe("school-morning");
+    expect(finalizeCoach(older, { ...MODEL, preset: "getting-dressed" }, local).preset).toBe("school-morning");
+    expect(finalizeCoach(older, MODEL, { ...local, preset: "leaving-playground" })).not.toHaveProperty("preset");
+    expect(finalizeCoach(older, { ...MODEL, preset: "phone-bedtime" }, local).preset).toBe("phone-bedtime");
+  });
+
+  it("omits the local preset when the topic has no option for the stated age", () => {
+    const req = request("My 12-year-old won't brush his teeth and wants another five minutes.");
+    req.memory.child = null;
+    expect(localCoachReply(req, NOW)).not.toHaveProperty("preset");
+  });
+
   it("falls back to the local lead when the model writes in the wrong language", () => {
     expect(finalizeCoach(req, { ...MODEL, lead: "Угроза сделала только хуже." }, local).lead).toBe(local.lead);
     const ru = request("Вечером опять истерика из-за зубов, я пригрозила, что не будет мультиков.", "ru");

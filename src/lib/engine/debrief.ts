@@ -1,6 +1,7 @@
-import { TECHNIQUE_BY_TAG } from "../data";
+import { presetsForAge, TECHNIQUE_BY_TAG } from "../data";
 import type { DebriefModelOutput } from "../schemas";
 import type { Debrief, DebriefRequest, PlanPhrase, PositiveTag, Rewrite, Scenario, Source, Turn } from "../types";
+import { matchPreset } from "./scenario";
 
 export function turnsToRewrite(turns: Turn[]): Turn[] {
   return turns.filter((turn) =>
@@ -15,14 +16,19 @@ export function examplePhrase(technique: PositiveTag): PlanPhrase {
   return { phrase: item.goodExample, technique };
 }
 
-const defaultTags: PositiveTag[] = ["name_feeling", "offer_choice", "when_then"];
+function presetPlan(scenario: Scenario): PlanPhrase[] {
+  const { title, trigger, setting, ageYears } = scenario;
+  const preset = matchPreset([title, trigger, setting].join(" "), ageYears) ?? presetsForAge(ageYears)[0];
+  if (!preset?.planPhrases?.length) throw new Error("Missing preset plan for age " + ageYears);
+  return preset.planPhrases;
+}
 
 export function fallbackPlan(scenario: Scenario): PlanPhrase[] {
-  return scenario.planPhrases?.length ? scenario.planPhrases : defaultTags.map(examplePhrase);
+  return scenario.planPhrases?.length ? scenario.planPhrases : presetPlan(scenario);
 }
 
 function completePlan(proposed: PlanPhrase[], scenario: Scenario): PlanPhrase[] {
-  const candidates = [...proposed.slice(0, 3), ...fallbackPlan(scenario), ...defaultTags.map(examplePhrase)];
+  const candidates = [...proposed.slice(0, 3), ...(scenario.planPhrases ?? []), ...presetPlan(scenario)];
   const plan: PlanPhrase[] = [];
   for (const phrase of candidates) {
     if (!plan.some((chosen) => chosen.technique === phrase.technique)) plan.push(phrase);

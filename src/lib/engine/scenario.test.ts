@@ -24,6 +24,17 @@ it("S01 uses getting-dressed ahead of screen-time and keeps the requested child 
   } });
 });
 
+it.each([
+  [12, "My child refuses to put on shoes.", "school-morning"],
+  [4, "My child refuses to put on shoes.", "getting-dressed"],
+  [12, "We need to leave but the homework is unfinished.", "homework-meltdown"],
+  [12, "My child is on the phone at bedtime.", "phone-bedtime"],
+  [7, "My child is on the phone at bedtime.", "screen-time-off"],
+] as const)("chooses an eligible scenario for age %i: %s", (ageYears, text, id) => {
+  const req = { ...request("S01"), ageYears, text };
+  expect(heuristicScenarioOutput(req).title).toBe(PRESETS.find((p) => p.id === id)!.title);
+});
+
 it("S03 checks safety even when output is off topic or has a different severity", () => {
   const req = request("S03");
   const out = heuristicScenarioOutput(req);
