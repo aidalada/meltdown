@@ -1,6 +1,6 @@
 # MELTDOWN — техническое задание (SPEC)
 
-**Версия:** 1.10 · **Статус:** утверждено к разработке · **Срок:** 16 рабочих часов (T+0 … T+16)
+**Версия:** 1.11 · **Статус:** утверждено к разработке · **Срок:** 16 рабочих часов (T+0 … T+16)
 
 **Команда:**
 
@@ -192,7 +192,7 @@
 | `/approach` | Методика, источники, безопасность | P0 | A (тексты C) |
 | `/progress` | История, серия, check-in | P1 | A |
 | `/sos` | Карточка на трудный момент | P1 | A |
-| `/api/scenario`, `/api/turn`, `/api/debrief`, `/api/health` | API | P0 | B |
+| `/api/scenario`, `/api/turn`, `/api/debrief`, `/api/coach`, `/api/health` | API | P0 | B |
 
 ---
 
@@ -269,7 +269,7 @@ meltdown/
    │  ├─ practice/[id]/debrief/page.tsx                 A
    │  ├─ pricing/page.tsx, approach/page.tsx            A
    │  ├─ progress/page.tsx, sos/page.tsx (P1)           A
-   │  └─ api/{turn,scenario,debrief,health}/route.ts    B
+   │  └─ api/{turn,scenario,debrief,coach,health}/route.ts B
    ├─ components/             A   (список в 13.4)
    ├─ hooks/                  A   useSession, useSpeechRecognition, useSpeechSynthesis, useHydrated
    ├─ content/copy.ts         C   ВСЕ тексты интерфейса (A только подключает)
@@ -1012,7 +1012,7 @@ export const maxDuration = 30;
 
 - Метод POST, `Content-Type: application/json`. Тело больше 16 КБ → 400.
 - Валидация zod. Ошибка → `400 { ok:false, error:{ code:"BAD_REQUEST", message } }`.
-- Лимит запросов по IP (`x-forwarded-for`, первый адрес): turn — 40 за 10 минут, scenario и debrief — 15 за 10 минут. Превышение → `429 { code:"RATE_LIMITED", message:"Too many requests. Please wait a few minutes." }`.
+- Лимит запросов по IP (`x-forwarded-for`, первый адрес) за 10 минут: turn — 40, coach — 30, scenario и debrief — по 15. Превышение → `429 { code:"RATE_LIMITED", message:"Too many requests. Please wait a few minutes." }`.
 - Ошибка AI **не возвращается как ошибка**: ответ 200 с данными из запасного режима и `meta.source = "fallback"`.
 - Непредвиденное исключение → `500 { code:"INTERNAL", message:"Something went wrong." }`. Без стектрейсов.
 - Лог одной строкой JSON: `{ route, source, latencyMs, tags: n, safety, reason? }`. **Тексты родителей и ребёнка не логируются.**
@@ -1068,6 +1068,19 @@ export class RateLimitedError extends Error {}
 3. Сетевая ошибка, таймаут или 5xx → локальные эвристики (`source: "fallback"`).
 4. 429 → `throw new RateLimitedError()`. UI показывает сообщение и не ломается.
 5. 400 → `throw new Error("Bad request")`: это баг, его видно в консоли.
+
+### 10.7 `POST /api/coach`
+
+Запрос — `CoachApiRequest` из `src/lib/coach-client.ts`, валидация — `CoachRequestSchema`. Лимит — 30 запросов за 10 минут на IP (§10.1).
+
+- `text`: реплика родителя, 1–600 символов после `trim()`. Для реплик короче 25 символов Себастьян отвечает локально.
+- `locale`: `en` или `ru`, язык ответа.
+- `memory`: `{ child, rehearsals, calmReached, struggle, lastScenarioTitle, planPhrase }`. `child` содержит `{ name, ageYears, temperament }` либо `null`. `rehearsals` и `calmReached` — неотрицательные целые, `struggle` — `NegativeTag` либо `null`, `lastScenarioTitle` и `planPhrase` — строки либо `null`.
+- `history`: до 8 сообщений `{ role: "parent" | "coach", text }` от старых к новым, до 1200 символов на сообщение. Клиент отправляет последние 6.
+
+Ответ — `ApiResponse<CoachApiReply>`. В `data` входят `{ safety, lead, technique, say?, preset? }`: статус `Safety`, ответ `lead` на языке запроса (до 400 символов), `PositiveTag`, необязательная фраза на английском `say` (до 160 символов) и необязательный идентификатор пресета. Объяснение приёма и источник берутся из `techniques.json`.
+
+Сервер проверяет безопасность до вызова Claude. При срабатывании проверки, короткой реплике или ошибке модели возвращает HTTP 200 с `meta.source: "fallback"`. На Claude отводится 7 секунд без повтора. Клиент ждёт до 8 секунд и использует локального Себастьяна в офлайне, при ошибке API или при `source: "fallback"`.
 
 ---
 
@@ -1432,6 +1445,7 @@ Props: `{ band: MoodBand; speaking: boolean; thinking: boolean; name: string; si
 - Без аккаунтов. Прогресс хранится только в браузере пользователя.
 - Учебные имена из списка, без настоящих имён и фото.
 - Текст на `/approach`: «Your practice stays on your device. To create the child's replies and your debrief, what you type is sent to our AI provider (Anthropic) and isn't stored on our servers.»
+- При онлайн-ответе Себастьяна Anthropic получает текущую реплику, недавнюю историю чата и сводку из `memory`, описанные в §10.7.
 - Сервер не логирует тексты. Аналитика не получает тексты, только события и числа.
 
 ### 15.5 Безопасность кода
@@ -1487,6 +1501,8 @@ export function track(event: EventName, props?: Record<string, string | number |
 
 Из выборки также исключить события прогона QA №1 с меткой `utm_source=internal_qa` и `utm_campaign=qa1`, если они попали в выгрузку. В этом прогоне был один просмотр Pricing и один тестовый клик по месячному тарифу. Оплата не проводилась.
 
+**Поправка к выборке, 15.11.2026.** По отчёту команды, около 04:00 по Алматы было примерно 40 просмотров страниц во время ночного QA. При выгрузке исключить относящиеся к этому прогону просмотры и сессии, если их можно выделить. Оценку в 40 просмотров не вычитать из числа уникальных посетителей или кликов по покупке.
+
 ---
 
 ## 17. Тестирование и контроль качества
@@ -1528,7 +1544,8 @@ export default defineConfig({
 | Файл | Что проверяет |
 |---|---|
 | `mood.test.ts` | Таблица 8.4 и границы уровней |
-| `heuristics.test.ts` | Все 20 `turnCases` проходят эвристикой (ожидаемые теги есть, запрещённых нет). Сейчас проходят 20 из 20 |
+| `heuristics.test.ts` | Все 20 `turnCases` проходят эвристикой. Для каждой `planPhrase` из пресетов эвристика находит её позитивный тег без негативных тегов. Также распознаются примеры всех позитивных приёмов |
+| `debrief.test.ts` | Запасной разбор использует итог из §9.10 и подставляет фразу из плана текущего сценария в переписывание, если её приём подходит |
 | `turn.test.ts` | `finalizeTurn`: выбор реплики по смене уровня, санитайзер (префикс «Max:», слово «AI» → запасная реплика), обрезка до 4 тегов, отбрасывание тега с чужим evidence, правило крика |
 | `safety.test.ts` | 15.1 |
 | `data.test.ts` | Все JSON проходят zod-схемы. Все `planPhrases` используют позитивные теги. Все теги в eval-кейсах существуют. Каждая регулярка компилируется |
@@ -1985,6 +2002,7 @@ git fetch && git checkout a/rehearsal && npm install && npm run dev
 | 1.9 | 14.11.2026 | C | QA №1: учтён отчёт Алихана по фронтенду. C повторно подтвердил пункты 3 и 11 на Vercel с `source: ai`. Пункт 23: API вернул 429 на корректный запрос после исчерпания лимита. Проверка интерфейса и остальные открытые пункты перечислены в §17.4. Настройка Stripe и PostHog описана в §18.3, переменные ещё нужно внести в Vercel. |
 | 1.10 | 15.11.2026 | C | В §9.10 утверждён шаблон `Next time, try this: {shortTip}` для итога запасного разбора при исходах, отличных от `calm_reached`. Изменение движка у B. В §18.3 уточнено, что C готовит значения Stripe и PostHog, а B вносит их в Vercel и пересобирает деплой. |
 | 1.10 | 15.11.2026 | C | Проверка GitHub показала, что `a/polish-p1` уже входит в `main`. Для следующих изменений P1 действует критерий §3.2: слияние после закрытия M3 (§20.1). |
+| 1.11 | 15.11.2026 | C | PR №9 (`5d5a753`) в `main`. Описан контракт `/api/coach` (§10.7) и лимит 30 запросов за 10 минут (§10.1). Запасной разбор использует утверждённый шаблон §9.10. В §17.2 записан тест на распознавание фраз плана, в §16.2 — исключение ночного QA из метрик спроса. |
 
 ---
 
