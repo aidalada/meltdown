@@ -4,7 +4,7 @@ import { copy } from "@/content/copy";
 import { textsFor } from "@/content/locale";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
 import { AGE_OPTIONS, choiceOf, isTexting, yearsForChoice } from "./age";
-import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "./coach";
+import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, extractChild, mergeChildFacts, reminderIcs } from "./coach";
 import { ageGroupOf } from "./data";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
 import {
@@ -14,7 +14,7 @@ import {
 import type { Session } from "./types";
 
 const EMPTY: CoachMemory = { child: null, rehearsals: 0, calmReached: 0, lastSession: null, plan: null, planCheckedIn: false, struggle: null };
-const MAX = { name: "Max", ageYears: 4, temperament: "strong-willed" } as const;
+const MAX = { name: "Max", ageYears: 4, temperament: "strong-willed", named: true, gender: null } as const;
 const NOW = new Date(2026, 10, 15, 13, 15);
 const YESTERDAY = new Date(2026, 10, 14, 20, 0);
 const THREAT_STORY = "He screamed about brushing teeth, so I told him: If you don't brush right now, no iPad tomorrow! It got worse.";
@@ -122,7 +122,7 @@ describe("coachGreeting", () => {
   });
 
   it("asks about yesterday's plan the next day", () => {
-    const memory: CoachMemory = { ...EMPTY, child: { name: "Max", ageYears: 4, temperament: "strong-willed" }, plan: { sessionId: "s1", phrase: "Top teeth first?", createdAt: YESTERDAY.toISOString() } };
+    const memory: CoachMemory = { ...EMPTY, child: MAX, plan: { sessionId: "s1", phrase: "Top teeth first?", createdAt: YESTERDAY.toISOString() } };
     const [greeting] = coachGreeting(memory, false, NOW);
     expect(coach(greeting).checkin).toBe("s1");
     expect(coach(greeting).lines[0]).toBe(copy.coach.greetCheckin("Max", "Top teeth first?"));
@@ -167,7 +167,7 @@ describe("buildMemory and browser storage", () => {
       profile: loadProfile(kv), sessions: listSessions(kv), checkins: [],
       plan: { sessionId: session.id, createdAt: YESTERDAY.toISOString(), phrases: [{ phrase: "Top teeth first?", technique: "offer_choice" }] },
     });
-    expect(memory.child).toEqual({ name: "Leo", ageYears: 5, temperament: "strong-willed" });
+    expect(memory.child).toEqual({ name: "Leo", ageYears: 5, temperament: "strong-willed", named: false, gender: null });
     expect(memory.rehearsals).toBe(1);
     expect(memory.struggle).toBe("threat");
     expect(memory.plan?.phrase).toBe("Top teeth first?");
@@ -257,5 +257,38 @@ describe("age ranges", () => {
   it("read naturally in Russian", () => {
     const { setup } = textsFor("ru").copy;
     expect(AGE_OPTIONS.map((o) => setup.ageRange(o.range))).toEqual(["2–3 года", "4–5 лет", "6–8 лет", "9–11 лет", "12+ лет"]);
+  });
+});
+
+describe("what the parent tells about the child", () => {
+  it("finds the name, the exact age and that it is a daughter", () => {
+    expect(extractChild("I have a daughter, her name is Jessica, she is 7. Tonight she refused the tablet.")).toEqual({ name: "Jessica", ageYears: 7, gender: "girl" });
+    expect(extractChild("My son Leo is 5 years old and bedtime is a war.")).toEqual({ name: "Leo", ageYears: 5, gender: "boy" });
+    expect(extractChild("my 4-year-old screams at bedtime")).toEqual({ ageYears: 4 });
+    expect(extractChild("У меня дочь Аня, ей 6 лет, она не хочет чистить зубы.")).toEqual({ name: "Аня", ageYears: 6, gender: "girl" });
+    expect(extractChild("Сыну 3 года, опять истерика на площадке.")).toEqual({ ageYears: 3, gender: "boy" });
+  });
+
+  it("does not mistake other words or numbers for a name or an age", () => {
+    expect(extractChild("He screamed for 20 minutes and I yelled. She is 20 minutes late.")).toEqual({});
+    expect(extractChild("My daughter refused to brush. Tonight was hard.")).toEqual({ gender: "girl" });
+    expect(extractChild("дочь опять не спит")).toEqual({ gender: "girl" });
+  });
+
+  it("swaps the practice name for a real one, or for one that fits a daughter", () => {
+    const facts = { named: false, gender: null };
+    const named = mergeChildFacts({ name: "Jessica", ageYears: 7, gender: "girl" }, DEFAULT_PROFILE, facts);
+    expect(named.profile).toMatchObject({ childName: "Jessica", ageYears: 7 });
+    expect(named.facts).toEqual({ named: true, gender: "girl" });
+    const unnamed = mergeChildFacts({ gender: "girl" }, DEFAULT_PROFILE, facts);
+    expect(unnamed.profile.childName).toBe("Lily");
+    expect(unnamed.facts).toEqual({ named: false, gender: "girl" });
+    expect(mergeChildFacts({}, DEFAULT_PROFILE, facts).changed).toBe(false);
+  });
+
+  it("says 'your child' until the parent gives a name", () => {
+    const memory = { ...EMPTY, child: { ...MAX, named: false }, plan: { sessionId: "s1", phrase: "Top teeth first?", createdAt: YESTERDAY.toISOString() } };
+    const [greeting] = coachGreeting(memory, false, NOW);
+    expect(coach(greeting).lines[0]).toBe(copy.coach.greetCheckin(copy.coach.yourChild, "Top teeth first?"));
   });
 });

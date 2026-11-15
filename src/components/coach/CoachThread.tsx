@@ -59,6 +59,7 @@ export function CoachThread({ messages, typing, today, pendingCheckin, pendingAg
               <li className="msg msg-parent"><div className="bubble bubble-parent">{m.text}</div></li>
             ) : (
               <CoachBubble avatar={lastOfGroup} lines={m.lines}>
+                {m.remembered && <span className="memory-chip memory-chip-saved"><Icon name="heart" size={14} />{m.remembered}</span>}
                 {m.again && <span className="memory-chip"><Icon name="repeat" size={14} />{copy.coach.againShort}</span>}
                 {m.technique && <SayCard tag={m.technique} say={m.say} />}
                 {(m.rehearse || m.technique) && (

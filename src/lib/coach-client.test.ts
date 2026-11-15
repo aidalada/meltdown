@@ -4,7 +4,7 @@ import { askCoach, coachRequest, resetCoachApi, type CoachApiRequest } from "./c
 import { CoachRequestSchema } from "./schemas";
 
 const MEMORY: CoachMemory = {
-  child: { name: "Max", ageYears: 4, temperament: "strong-willed" }, rehearsals: 2, calmReached: 1,
+  child: { name: "Max", ageYears: 4, temperament: "strong-willed", named: true, gender: null }, rehearsals: 2, calmReached: 1,
   lastSession: { scenarioId: "teeth-bedtime", title: "Brushing teeth at bedtime", outcome: "calm_reached" },
   plan: { sessionId: "s1", phrase: "Top teeth first?", createdAt: "2026-11-14T19:00:00.000Z" },
   planCheckedIn: false, struggle: "threat",
@@ -83,7 +83,7 @@ describe("coachRequest", () => {
     ]);
     expect(request.locale).toBe("ru");
     expect(request.memory).toEqual({
-      child: MEMORY.child, rehearsals: 2, calmReached: 1, struggle: "threat",
+      child: { name: "Max", ageYears: 4, temperament: "strong-willed" }, rehearsals: 2, calmReached: 1, struggle: "threat",
       lastScenarioTitle: "Brushing teeth at bedtime", planPhrase: "Top teeth first?",
     });
     expect(request.history).toEqual([{ role: "coach", text: "Hi. What happened?" }, { role: "parent", text: "Bedtime again." }]);

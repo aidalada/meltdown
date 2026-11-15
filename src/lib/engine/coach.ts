@@ -33,7 +33,7 @@ function clip(text: string, max: number): string {
 /** The deterministic answer the device would give, in the request's language. */
 export function localCoachReply(req: CoachRequest, now: Date): CoachApiReply {
   const memory: CoachMemory = {
-    child: req.memory.child,
+    child: req.memory.child && { ...req.memory.child, named: req.memory.child.name !== "not told yet", gender: null },
     rehearsals: req.memory.rehearsals,
     calmReached: req.memory.calmReached,
     lastSession: null,

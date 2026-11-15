@@ -19,7 +19,7 @@ import { useSpeechSynthesis } from "@/hooks/useSpeechSynthesis";
 import { isTexting } from "@/lib/age";
 import { MAX_TURNS } from "@/lib/constants";
 import { bandOf } from "@/lib/engine/mood";
-import { loadProfile, saveProfile } from "@/lib/storage";
+import { loadChildFacts, loadProfile, saveProfile } from "@/lib/storage";
 import type { Profile } from "@/lib/types";
 
 const DEFAULT_PROFILE: Profile = { version: 1, childName: "Max", ageYears: 4, temperament: "strong-willed", coachHints: true, voiceOn: true };
@@ -55,6 +55,7 @@ function Rehearsal({ id }: { id: string }) {
   const router = useRouter();
   const voice = useSpeechSynthesis();
   const [profile, setProfile] = useState<Profile>(() => loadProfile() ?? DEFAULT_PROFILE);
+  const [facts] = useState(loadChildFacts);
   const [started, setStarted] = useState(false);
   const speakRef = useRef<(text: string) => void>(() => {});
 
@@ -80,6 +81,8 @@ function Rehearsal({ id }: { id: string }) {
 
   const s = session;
   const band = bandOf(s.mood);
+  // A daughter the parent told Sebastian about gets the girl look in her own rehearsals.
+  const girl = facts.gender === "girl" && s.scenario.childName === profile.childName;
   const lastTurn = s.turns.length ? s.turns[s.turns.length - 1] : null;
   const ended = s.status === "ended";
   const turnNumber = Math.min(s.turns.length + (ended ? 0 : 1), MAX_TURNS);
@@ -186,7 +189,7 @@ function Rehearsal({ id }: { id: string }) {
       ) : (
         <div className="relative grid grid-cols-[minmax(0,1fr)] gap-4 min-[900px]:grid-cols-[340px_minmax(0,1fr)] min-[900px]:items-start min-[900px]:gap-6">
           <aside className="card stage" aria-label={s.scenario.childName}>
-            <ChildAvatar key={s.turns.length} band={band} speaking={voice.speaking} thinking={pending} name={s.scenario.childName} age={s.scenario.ageGroup} pop={s.turns.length > 0} />
+            <ChildAvatar key={s.turns.length} band={band} speaking={voice.speaking} thinking={pending} name={s.scenario.childName} age={s.scenario.ageGroup} girl={girl} pop={s.turns.length > 0} />
             <MoodMeter value={s.mood} delta={lastTurn ? lastTurn.delta : null} deltaKey={s.turns.length} />
             <div className="flex flex-wrap justify-center gap-1.5 max-[899px]:justify-start">
               <BackupBadge visible={usedBackup} />
@@ -202,7 +205,7 @@ function Rehearsal({ id }: { id: string }) {
           {!started && !ended && (
             <div className="overlay">
               <div className="card m-4 grid max-w-[360px] justify-items-center gap-3 p-6 text-center">
-                <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} age={s.scenario.ageGroup} size={120} showName={false} />
+                <ChildAvatar band={band} speaking={false} thinking={false} name={s.scenario.childName} age={s.scenario.ageGroup} girl={girl} size={120} showName={false} />
                 {startCard}
               </div>
             </div>

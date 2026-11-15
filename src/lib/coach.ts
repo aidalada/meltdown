@@ -1,11 +1,12 @@
 import { textsFor, type Texts } from "@/content/locale";
-import type { CoachMemory, CoachMessage, CoachReply } from "@/types/coach";
+import type { ChildGender, CoachMemory, CoachMessage, CoachReply } from "@/types/coach";
 import { MAX_SCENARIO_TEXT } from "./constants";
 import { PRESETS, TECHNIQUE_BY_TAG } from "./data";
 import { heuristicTags } from "./engine/heuristics";
 import { localDate } from "./progress";
 import { detectSafety, maxSafety } from "./safety";
-import type { Checkin, SavedPlan } from "./storage";
+import { CHILD_NAMES } from "./data";
+import type { Checkin, ChildFacts, SavedPlan } from "./storage";
 import type { NegativeTag, PositiveTag, Profile, Safety, Session, TechniqueTag } from "./types";
 
 /*
@@ -93,10 +94,12 @@ export interface MemoryInput {
   sessions: Session[];
   plan: SavedPlan | null;
   checkins: Checkin[];
+  /** Name and gender facts the parent told Sebastian in the chat. */
+  facts?: ChildFacts | null;
 }
 
 /** What Sebastian remembers, built only from records already in this browser. */
-export function buildMemory({ profile, sessions, plan, checkins }: MemoryInput): CoachMemory {
+export function buildMemory({ profile, sessions, plan, checkins, facts }: MemoryInput): CoachMemory {
   const practiced = sessions.filter((s) => s.turns.length > 0);
   const counts = new Map<NegativeTag, number>();
   for (const session of practiced) {
@@ -111,7 +114,10 @@ export function buildMemory({ profile, sessions, plan, checkins }: MemoryInput):
   const source = profile ?? (last ? { childName: last.scenario.childName, ageYears: last.scenario.ageYears, temperament: last.scenario.temperament } : null);
   const firstPhrase = plan?.phrases[0];
   return {
-    child: source ? { name: source.childName, ageYears: source.ageYears, temperament: source.temperament } : null,
+    child: source ? {
+      name: source.childName, ageYears: source.ageYears, temperament: source.temperament,
+      named: facts?.named ?? false, gender: facts?.gender ?? null,
+    } : null,
     rehearsals: practiced.length,
     calmReached: practiced.filter((s) => s.outcome === "calm_reached").length,
     lastSession: last ? { scenarioId: last.scenario.id, title: last.scenario.title, outcome: last.outcome } : null,
@@ -126,7 +132,7 @@ export function coachGreeting(memory: CoachMemory, firstVisit: boolean, now: Dat
   const c = t.copy.coach;
   const at = now.toISOString();
   const messages: CoachMessage[] = firstVisit ? [{ role: "coach", at, lines: [c.disclosure] }] : [];
-  const child = memory.child?.name ?? c.yourChild;
+  const child = childLabel(memory, t);
   const { plan, lastSession } = memory;
   if (!memory.child) {
     // Nothing is known yet: one tap on an age range, and the first real question follows the answer.
@@ -203,6 +209,101 @@ export function coachReply(text: string, memory: CoachMemory, now: Date, t: Text
       ...(topic ? { preset: topic.preset } : {}),
     },
   };
+}
+
+/** The child's name when the parent told it, otherwise "your child" in the screen language. */
+export function childLabel(memory: CoachMemory, t: Texts = EN): string {
+  return memory.child?.named ? memory.child.name : t.copy.coach.yourChild;
+}
+
+/*
+ * What the parent tells about the child in passing: "my daughter Jessica, she's 7", "дочь Аня, ей 5".
+ * Plain patterns, no model: it works offline, and nothing leaves the browser for it.
+ */
+export interface FoundChild { name?: string; ageYears?: number; gender?: ChildGender }
+
+const NUMBER_WORDS: Record<string, number> = {
+  two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+};
+const NUM = String.raw`(\d{1,2}|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen)`;
+const AGE_PATTERNS: RegExp[] = [
+  new RegExp(String.raw`\b${NUM}[\s-]*(?:years?|yrs?)[\s-]*old\b`, "i"),
+  new RegExp(String.raw`\b${NUM}[\s-]*(?:y/o|yo)\b`, "i"),
+  new RegExp(String.raw`\b(?:she|he|they)(?:'s| is| are| just turned| turned)\s+${NUM}\b(?![\s-]*(?:minutes?|min|hours?|times?|am|pm|o'clock))`, "i"),
+  new RegExp(String.raw`\b(?:my|our)\s+${NUM}[\s-]*(?:year[\s-]*old)\b`, "i"),
+  /(\d{1,2})\s*(?:год|года|лет)(?![а-яё])/i,
+  /(?:^|[^а-яё])(?:ей|ему|исполнилось)\s+(\d{1,2})(?![\d])/i,
+];
+const KID_EN = String.raw`(?:daughter|son|girl|boy|kid|child|toddler|little one|baby)`;
+const NAME_EN = String.raw`([A-Z][a-z]{1,19})`;
+const NAME_PATTERNS_EN: RegExp[] = [
+  new RegExp(String.raw`\b(?:her|his|their|my (?:daughter|son|kid|child)'s)\s+name\s+is\s+${NAME_EN}\b`),
+  new RegExp(String.raw`\b(?:named|called)\s+${NAME_EN}\b`),
+  new RegExp(String.raw`\b(?:[Mm]y|[Oo]ur)\s+(?:\w+[\s-])?${KID_EN},?\s+${NAME_EN}\b`),
+  new RegExp(String.raw`\b${NAME_EN}\s+is\s+my\s+${KID_EN}\b`),
+];
+const NAME_RU = "([А-ЯЁ][а-яё]{1,19})";
+const NAME_PATTERNS_RU: RegExp[] = [
+  new RegExp(`(?:зовут|имя)\\s+${NAME_RU}`),
+  // No "i" flag: the name must start with a capital letter, so "дочь опять…" is not read as a name.
+  new RegExp(`(?:^|[^а-яё])(?:[Дд]очь|[Дд]очка|[Дд]оченька|[Дд]очке|[Сс]ын|[Сс]ынок|[Сс]ыну|[Мм]алыш|[Мм]алышка)\\s*,?\\s+${NAME_RU}`),
+];
+/** Capitalized words that follow "my son" or start a sentence but are not names. */
+const NOT_NAMES = new Set([
+  "I", "The", "She", "He", "It", "They", "We", "Tonight", "Today", "Yesterday", "This", "That", "When", "After", "Before", "Then",
+  "And", "But", "So", "Every", "Always", "Never", "Is", "Was", "Has", "Had", "Just", "Again", "Who", "Refused", "Screamed",
+  "Сегодня", "Вчера", "Опять", "Снова", "Она", "Он", "Мы", "Я", "Когда", "Потом", "Который", "Которая",
+]);
+
+function toNumber(value: string): number {
+  return NUMBER_WORDS[value.toLowerCase()] ?? Number(value);
+}
+
+export function extractChild(text: string): FoundChild {
+  const found: FoundChild = {};
+  for (const pattern of AGE_PATTERNS) {
+    const match = pattern.exec(text);
+    const n = match ? toNumber(match[1]) : NaN;
+    if (Number.isInteger(n) && n >= 1 && n <= 17) {
+      found.ageYears = Math.min(12, Math.max(2, n));
+      break;
+    }
+  }
+  for (const pattern of [...NAME_PATTERNS_EN, ...NAME_PATTERNS_RU]) {
+    const name = pattern.exec(text)?.[1];
+    if (name && !NOT_NAMES.has(name)) {
+      found.name = name;
+      break;
+    }
+  }
+  if (/\bdaughters?\b/i.test(text) || /\b(?:my|our)\s+(?:\w+[\s-])?(?:girl|little girl)\b/i.test(text) || /(?:^|[^а-яё])(?:дочь|дочка|доченька|дочке|дочери|дочку|малышка)(?![а-яё])/i.test(text)) {
+    found.gender = "girl";
+  } else if (/\bsons?\b/i.test(text) || /\b(?:my|our)\s+(?:\w+[\s-])?(?:boy|little boy)\b/i.test(text) || /(?:^|[^а-яё])(?:сын|сынок|сына|сыну|сыном)(?![а-яё])/i.test(text)) {
+    found.gender = "boy";
+  }
+  return found;
+}
+
+const GIRL_NAMES = ["Lily", "Mia", "Ava", "Zoe"];
+const BOY_NAMES = ["Max", "Leo", "Sam", "Noah"];
+
+/**
+ * Puts what the parent said into the profile. A real name replaces the practice name; a known gender
+ * without a name swaps the practice name for one that fits ("Max" becomes "Lily" for a daughter).
+ */
+export function mergeChildFacts(found: FoundChild, profile: Profile, facts: ChildFacts): { profile: Profile; facts: ChildFacts; changed: boolean } {
+  let next = profile;
+  let nextFacts = facts;
+  if (found.ageYears && found.ageYears !== profile.ageYears) next = { ...next, ageYears: found.ageYears };
+  if (found.gender && found.gender !== facts.gender) nextFacts = { ...nextFacts, gender: found.gender };
+  if (found.name && (found.name !== profile.childName || !facts.named)) {
+    next = { ...next, childName: found.name };
+    nextFacts = { ...nextFacts, named: true };
+  } else if (!nextFacts.named && nextFacts.gender) {
+    const fits = nextFacts.gender === "girl" ? GIRL_NAMES : BOY_NAMES;
+    if (!fits.includes(next.childName)) next = { ...next, childName: fits.find((n) => CHILD_NAMES.includes(n)) ?? fits[0] };
+  }
+  return { profile: next, facts: nextFacts, changed: next !== profile || nextFacts !== facts };
 }
 
 const icsText = (s: string) => s.replace(/[\\;,]/g, (ch) => `\\${ch}`);

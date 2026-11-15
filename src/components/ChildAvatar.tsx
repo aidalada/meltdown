@@ -48,10 +48,47 @@ export interface ChildAvatarProps {
   pop?: boolean;
   /** True when nearby text already names the child (age buttons, memory panel). */
   decorative?: boolean;
+  /** A daughter: pigtails for the little ones, longer hair later, and a bow. */
+  girl?: boolean;
+}
+
+const BOW = "#FF5C9A";
+
+/** Pigtails or long hair, drawn behind the head. */
+function GirlHair({ age }: { age: AgeGroup }) {
+  const little = age === "toddler" || age === "preschool";
+  return (
+    <>
+      {little ? (
+        <>
+          <ellipse cx="40" cy="76" rx="15" ry="19" fill={HAIR_COLOR} transform="rotate(-25 40 76)" />
+          <ellipse cx="160" cy="76" rx="15" ry="19" fill={HAIR_COLOR} transform="rotate(25 160 76)" />
+          <circle cx="50" cy="66" r="5" fill={BOW} />
+          <circle cx="150" cy="66" r="5" fill={BOW} />
+        </>
+      ) : (
+        <>
+          <path d="M40 92 Q28 132 36 172 Q46 160 50 140 Q46 118 52 96 Z" fill={HAIR_COLOR} />
+          <path d="M160 92 Q172 132 164 172 Q154 160 150 140 Q154 118 148 96 Z" fill={HAIR_COLOR} />
+        </>
+      )}
+    </>
+  );
+}
+
+/** A bow on top of the hair, so a daughter reads as a girl at a glance. */
+function Bow() {
+  return (
+    <g transform="translate(128 42) rotate(18)">
+      <path d="M0 0 L-16 -9 L-16 9 Z" fill={BOW} />
+      <path d="M0 0 L16 -9 L16 9 Z" fill={BOW} />
+      <circle cx="0" cy="0" r="4.5" fill="#E2457F" />
+    </g>
+  );
 }
 
 /** 2D practice child (SPEC 13.3). Pure SVG, safe to render on the server. */
-export function ChildAvatar({ band, speaking, thinking, name, age = "preschool", size = 220, showName = true, pop = false, decorative = false }: ChildAvatarProps) {
+export function ChildAvatar({ band, speaking, thinking, name, age = "preschool", size = 220, showName = true, pop = false, decorative = false, girl = false }: ChildAvatarProps) {
   const copy = useCopy();
   const dx = thinking ? 3 : 0;
   const dy = thinking ? -4 : 0;
@@ -63,10 +100,12 @@ export function ChildAvatar({ band, speaking, thinking, name, age = "preschool",
         <svg viewBox="0 0 200 200" width={size} height={size} aria-hidden="true">
           <circle className="halo" cx="100" cy="100" r="96" fill={MOOD_COLOR[band]} opacity="0.15" />
           <g className="face">
+            {girl && <GirlHair age={age} />}
             <circle cx="38" cy="110" r="10" fill="#FFD7B0" />
             <circle cx="162" cy="110" r="10" fill="#FFD7B0" />
             <circle cx="100" cy="108" r="62" fill="#FFD7B0" stroke="#E8B98E" strokeWidth="2" />
             <path d={HAIR[age]} fill={HAIR_COLOR} />
+            {girl && <Bow />}
             {age === "school" && (
               <>
                 <path d="M94 33 Q98 15 112 19 Q105 24 108 33 Z" fill={HAIR_COLOR} />

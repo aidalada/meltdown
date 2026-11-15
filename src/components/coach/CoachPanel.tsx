@@ -28,7 +28,7 @@ export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelP
           <h1 id="coach-name" className="text-[22px]">{copy.coach.name}</h1>
           <p className="text-sm text-muted">
             {copy.coach.role}
-            {child && <span className="block">{copy.coach.knows(child.name, child.ageYears)}</span>}
+            {child && <span className="block">{child.named ? copy.coach.knows(child.name, child.ageYears) : copy.coach.knowsAge(child.ageYears)}</span>}
           </p>
         </div>
         <button type="button" className="btn btn-ghost min-[900px]:hidden" aria-expanded={open} aria-controls="coach-memory" onClick={() => setOpen((v) => !v)}>
@@ -49,10 +49,10 @@ export function CoachPanel({ memory, reminded, onRemind, onForget }: CoachPanelP
             <dl className="memory-list">
               {child && (
                 <div className="flex items-center gap-3">
-                  <ChildBadge years={child.ageYears} size={44} />
+                  <ChildBadge years={child.ageYears} size={44} girl={child.gender === "girl"} />
                   <div className="min-w-0">
                     <dt>{copy.coach.memoryChild}</dt>
-                    <dd>{copy.coach.memoryChildValue(child.name, child.ageYears, copy.setup.temperaments[child.temperament])}</dd>
+                    <dd>{copy.coach.memoryChildValue(child.named ? child.name : copy.coach.yourChildTitle, child.ageYears, copy.setup.temperaments[child.temperament])}</dd>
                   </div>
                 </div>
               )}

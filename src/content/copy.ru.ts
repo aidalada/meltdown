@@ -199,7 +199,11 @@ export const ru = {
     name: "Себастьян",
     role: "AI-коуч по воспитанию",
     knows: (child: string, age: number) => `Знает: ${child}, ${years(age)}`,
+    knowsAge: (age: number) => `Знает: ребёнку ${years(age)}`,
     yourChild: "ваш ребёнок",
+    yourChildTitle: "Ваш ребёнок",
+    rememberedChild: (name: string | null, age: number | null) =>
+      `Запомнил: ${[name, age ? years(age) : null].filter(Boolean).join(", ")}`,
     childFallback: "ребёнок",
     cta: "Поговорить с Себастьяном",
     inputLabel: "Сообщение Себастьяну",

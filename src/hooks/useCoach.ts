@@ -8,13 +8,13 @@ import { createSession } from "@/hooks/useSession";
 import { track } from "@/lib/analytics";
 import { postScenario, RateLimitedError } from "@/lib/api-client";
 import { rangeOf, yearsForChoice, type AgeChoice } from "@/lib/age";
-import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, reminderIcs } from "@/lib/coach";
+import { ageReply, buildMemory, checkinReply, coachGreeting, coachReply, extractChild, mergeChildFacts, reminderIcs } from "@/lib/coach";
 import { askCoach, coachRequest } from "@/lib/coach-client";
 import { ageGroupOf, PRESETS } from "@/lib/data";
 import { localDate } from "@/lib/progress";
 import {
-  addCheckin, DEFAULT_PROFILE, forgetEverything, listSessions, loadCheckins, loadCoachThread, loadPlan, loadProfile,
-  saveCoachThread, saveProfile, type Checkin,
+  addCheckin, DEFAULT_PROFILE, forgetEverything, listSessions, loadCheckins, loadChildFacts, loadCoachThread, loadPlan, loadProfile,
+  saveChildFacts, saveCoachThread, saveProfile, type Checkin,
 } from "@/lib/storage";
 import type { Scenario } from "@/lib/types";
 import type { CoachMemory, CoachMessage } from "@/types/coach";
@@ -24,7 +24,7 @@ const DAY_MS = 86_400_000;
 const REPLY_DELAY_MS = 700;
 
 function readMemory(): CoachMemory {
-  return buildMemory({ profile: loadProfile(), sessions: listSessions(), plan: loadPlan(), checkins: loadCheckins() });
+  return buildMemory({ profile: loadProfile(), sessions: listSessions(), plan: loadPlan(), checkins: loadCheckins(), facts: loadChildFacts() });
 }
 
 /** `?morning=1` jumps a day ahead, so the demo can show the next-morning check-in. */
@@ -69,12 +69,26 @@ export function useCoach() {
     const withParent: CoachMessage[] = [...messages, { role: "parent", at: clock().toISOString(), text }];
     commit(withParent);
     setTyping(true);
+    // "My daughter Jessica is 7": the name and the exact age go to the browser profile right away.
+    let known = memory;
+    let remembered: string | undefined;
+    const found = extractChild(text);
+    if (found.name || found.ageYears || found.gender) {
+      const merged = mergeChildFacts(found, loadProfile() ?? DEFAULT_PROFILE, loadChildFacts());
+      if (merged.changed) {
+        saveProfile(merged.profile);
+        saveChildFacts(merged.facts);
+        known = readMemory();
+        setMemory(known);
+        if (found.name || found.ageYears) remembered = copy.coach.rememberedChild(found.name ?? null, found.ageYears ?? null);
+      }
+    }
     // The local coach always answers first: it runs the safety check and is the fallback.
-    const local = coachReply(text, memory, clock(), texts);
+    const local = coachReply(text, known, clock(), texts);
     // Only a real story goes to the model: never crisis words, never a too-short message.
     const story = local.kind === "message" && local.message.role === "coach" && local.message.rehearse !== undefined;
     const [ai] = await Promise.all([
-      story ? askCoach(coachRequest(text, texts.locale, memory, messages)) : null,
+      story ? askCoach(coachRequest(text, texts.locale, known, messages)) : null,
       wait(REPLY_DELAY_MS),
     ]);
     let message = local.message;
@@ -86,6 +100,7 @@ export function useCoach() {
       // The model's words and choice of technique; the why and the source still come from techniques.json.
       message = { ...local.message, lines: [ai.lead], technique: ai.technique, say: ai.say, preset: ai.preset ?? local.message.preset };
     }
+    if (remembered && message.role === "coach") message = { ...message, remembered };
     if (story) track("coach_reply", { source: ai ? "ai" : "fallback" });
     commit([...withParent, message]);
     setTyping(false);

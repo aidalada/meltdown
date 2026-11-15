@@ -190,7 +190,11 @@ export const copy = {
     name: "Sebastian",
     role: "AI parenting coach",
     knows: (child: string, age: number) => `Knows ${child}, ${age}`,
+    knowsAge: (age: number) => `Knows your child is ${age}`,
     yourChild: "your child",
+    yourChildTitle: "Your child",
+    rememberedChild: (name: string | null, age: number | null) =>
+      `Saved to memory: ${[name, age ? `${age} years old` : null].filter(Boolean).join(", ")}`,
     childFallback: "child",
     cta: "Talk to Sebastian",
     inputLabel: "Message Sebastian",
