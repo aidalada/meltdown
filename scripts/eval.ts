@@ -100,11 +100,17 @@ async function evalPractice(base: URL, only?: "turn" | "scenario"): Promise<void
       failedRequest(item.id, res.status, expected, res.latencyMs);
       continue;
     }
-    if (res.source === "fallback") fallback++;
     const actual = describeScenario(res.data);
-    const pass = res.source === "ai" && actual === expected;
+    const unexpectedFallback = res.source === "fallback" && item.expect.kind !== "safety";
+    if (unexpectedFallback) fallback++;
+    const forbidden = item.forbidPattern && new RegExp(item.forbidPattern, "i");
+    const scenario = res.data.kind === "ok" ? res.data.scenario : undefined;
+    const mismatch = scenario && forbidden
+      ? (["title", "setting", "openingLine"] as const).find((field) => forbidden.test(scenario[field]))
+      : undefined;
+    const pass = !unexpectedFallback && actual === expected && mismatch === undefined;
     if (pass) scenarios++;
-    row(item.id, pass, actual, expected, "—", res.source, res.latencyMs);
+    row(item.id, pass, mismatch ? `${actual} (forbidPattern in ${mismatch})` : actual, expected, "—", res.source, res.latencyMs);
   }
 
   const count = turnCases.length;
@@ -121,7 +127,7 @@ async function evalPractice(base: URL, only?: "turn" | "scenario"): Promise<void
     console.log("turn latencyMs: p50 —, p90 —, mean —");
   }
   if ((count > 0 && (tags < 17 || replies < count)) || fallback > 0 ||
-      (only === "scenario" && scenarios < scenarioCases.length)) process.exitCode = 1;
+      scenarios < scenarioCases.length) process.exitCode = 1;
 }
 
 async function evalCoach(base: URL): Promise<void> {
@@ -130,11 +136,13 @@ async function evalCoach(base: URL): Promise<void> {
   };
   const cyrillic = /\p{Script=Cyrillic}/u;
   const latencies: number[] = [];
-  let passed = 0;
+  let passed = 0, safetyFallback = 0, unexpectedFallback = 0;
   console.log("| id | PASS/FAIL | safety | technique | preset | say words | source | latencyMs |");
   console.log("| --- | --- | --- | --- | --- | ---: | --- | ---: |");
   for (const item of cases.coachCases) {
-    const req: CoachRequest = { text: item.text, locale: item.locale, memory, history: [] };
+    const child: CoachRequest["memory"]["child"] = item.childAge === undefined ? null :
+      { ageYears: item.childAge, name: "not told yet", temperament: "strong-willed" };
+    const req: CoachRequest = { text: item.text, locale: item.locale, memory: { ...memory, child }, history: [] };
     const res = await postCase(base, "/api/coach", req, CoachReplySchema);
     if (!res.ok) {
       const reason = res.status === 200 ? "invalid response" : `HTTP ${res.status}`;
@@ -145,10 +153,15 @@ async function evalCoach(base: URL): Promise<void> {
     latencies.push(res.latencyMs);
     const { safety, lead, technique, say, preset } = res.data;
     const words = say === undefined ? 0 : wordCount(normalizeText(say));
-    const sayOk = item.expectNoSay ? say === undefined
+    if (res.source === "fallback") {
+      if (item.expectSafety !== "none" && safety === item.expectSafety) safetyFallback++;
+      else unexpectedFallback++;
+    }
+    const sayOk = item.expectSafety !== "none" || item.expectNoSay ? say === undefined
       : say !== undefined && !cyrillic.test(say) && words > 0 && words <= 18;
+    const accepted = Array.isArray(item.expectPreset) ? item.expectPreset : [item.expectPreset];
     const presetOk = item.expectPreset === undefined ||
-      (item.expectPreset === "none" ? preset === undefined : preset === item.expectPreset);
+      (item.expectPreset === "none" ? preset === undefined : preset !== undefined && accepted.includes(preset));
     const pass = safety === item.expectSafety && (item.expectSafety !== "none" || res.source === "ai") &&
       (!item.expectTechniques || item.expectTechniques.includes(technique)) &&
       !item.forbidTechniques?.includes(technique) && presetOk && sayOk &&
@@ -156,10 +169,10 @@ async function evalCoach(base: URL): Promise<void> {
     if (pass) passed++;
     console.log(`| ${item.id} | ${pass ? "PASS" : "FAIL"} | ${safety} | ${technique} | ${preset ?? "—"} | ${words} | ${res.source} | ${res.latencyMs} |`);
   }
-  console.log(`coach ${passed}/${cases.coachCases.length}`);
+  console.log(`coach ${passed}/${cases.coachCases.length}, fallback ${unexpectedFallback}, safety fallback ${safetyFallback}`);
   latencies.sort((a, b) => a - b);
   console.log(`coach latencyMs: p50 ${latencies[Math.ceil(latencies.length / 2) - 1] ?? "—"}`);
-  if (passed < 8) process.exitCode = 1;
+  if (passed < 10 || unexpectedFallback > 0) process.exitCode = 1;
 }
 
 async function main(): Promise<void> {

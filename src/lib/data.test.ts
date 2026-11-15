@@ -120,11 +120,19 @@ describe("scenarios", () => {
     }
   });
 
-  it("resolves every requested coach preset", () => {
+  it("compiles each scenario age check as a case-insensitive RegExp", () => {
+    for (const { id, forbidPattern } of EvalCasesFileSchema.parse(evalCasesJson).scenarioCases) {
+      if (forbidPattern) expect(() => new RegExp(forbidPattern, "i"), id).not.toThrow();
+    }
+  });
+
+  it("resolves every requested coach preset and checks it fits the child's age", () => {
     const presetIds = new Set(PRESETS.map(({ id }) => id));
-    for (const { id, expectPreset } of EvalCasesFileSchema.parse(evalCasesJson).coachCases) {
-      if (expectPreset !== undefined && expectPreset !== "none") {
-        expect(presetIds.has(expectPreset), id).toBe(true);
+    for (const { id, expectPreset, childAge } of EvalCasesFileSchema.parse(evalCasesJson).coachCases) {
+      if (expectPreset === undefined || expectPreset === "none") continue;
+      for (const preset of Array.isArray(expectPreset) ? expectPreset : [expectPreset]) {
+        expect(presetIds.has(preset), id).toBe(true);
+        if (childAge !== undefined) expect(presetFitsAge(preset, childAge), id).toBe(true);
       }
     }
   });

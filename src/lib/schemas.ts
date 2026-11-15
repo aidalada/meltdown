@@ -310,6 +310,7 @@ const evalScenarioCaseSchema = z.object({
   id: z.string(),
   text: scenarioText,
   ageYears,
+  forbidPattern: z.string().min(1).optional(),
   expect: z.discriminatedUnion("kind", [z.object({ kind: z.literal("ok") }), offTopic, safetyResult]),
 });
 export type EvalScenarioCase = z.infer<typeof evalScenarioCaseSchema>;
@@ -318,10 +319,11 @@ const evalCoachCaseSchema = z.object({
   id: z.string(),
   locale: LocaleSchema,
   text: CoachRequestSchema.shape.text,
+  childAge: ageYears.optional(),
   expectSafety: SafetySchema,
   expectTechniques: z.array(PositiveTagSchema).optional(),
   forbidTechniques: z.array(PositiveTagSchema).optional(),
-  expectPreset: z.string().min(1).optional(),
+  expectPreset: z.union([z.string().min(1), z.array(z.string().min(1)).min(1)]).optional(),
   expectNoSay: z.boolean().optional(),
 });
 
